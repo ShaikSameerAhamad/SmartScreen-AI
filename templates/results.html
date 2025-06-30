@@ -1,0 +1,43 @@
+<!-- templates/results.html -->
+{% extends 'base.html' %}
+
+{% block content %}
+<div class="container">
+    <h2 class="mb-4">Analysis Result</h2>
+    <div class="row">
+        <div class="col-md-8">
+            <div class="card mb-4">
+                <div class="card-header">
+                    <h4>Comparison: Your Resume vs. {{ result.job_description.title }}</h4>
+                </div>
+                <div class="card-body">
+                    <h5 class="card-title">AI-Powered Suggestions</h5>
+                    <p class="card-text">{{ result.ai_suggestions }}</p>
+                    <hr>
+                    <h5 class="card-title">Missing Skills</h5>
+                    {% if result.missing_skills %}
+                        <ul>
+                        {% for skill in result.missing_skills %}
+                            <li>{{ skill }}</li>
+                        {% endfor %}
+                        </ul>
+                    {% else %}
+                        <p>No missing skills identified!</p>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+        <div class="col-md-4">
+            <div class="card text-center">
+                <div class="card-header">
+                    <h4>Match Score</h4>
+                </div>
+                <div class="card-body">
+                    <h1 class="display-4">{{ result.match_score }}%</h1>
+                </div>
+            </div>
+        </div>
+    </div>
+    <a href="{% url 'dashboard' %}" class="btn btn-secondary mt-3">Back to Dashboard</a>
+</div>
+{% endblock %}

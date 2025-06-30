@@ -1,0 +1,45 @@
+<!-- templates/dashboard.html -->
+{% extends 'base.html' %}
+
+{% block content %}
+<div class="row">
+    <!-- Upload Form Section -->
+    <div class="col-md-5">
+        <h2>Analyze New Resume</h2>
+        <div class="card">
+            <div class="card-body">
+                <form method="post" enctype="multipart/form-data">
+                    {% csrf_token %}
+                    <div class="mb-3">
+                        <label for="id_resume_file" class="form-label">Upload Resume (PDF, DOCX, TXT)</label>
+                        {{ form.resume_file }}
+                    </div>
+                    <div class="mb-3">
+                        <label for="id_job_description" class="form-label">Select Job Role</label>
+                        {{ form.job_description }}
+                    </div>
+                    <button type="submit" class="btn btn-primary">Analyze</button>
+                </form>
+            </div>
+        </div>
+    </div>
+
+    <!-- Past Results Section -->
+    <div class="col-md-7">
+        <h2>Analysis History</h2>
+        {% for result in past_results %}
+            <div class="card mb-3">
+                <div class="card-body">
+                    <h5 class="card-title">Analysis for {{ result.job_description.title }}</h5>
+                    <p class="card-text">
+                        Analyzed on: {{ result.analyzed_at|date:"F d, Y" }}
+                    </p>
+                    <a href="{% url 'results' result.id %}" class="btn btn-secondary btn-sm">View Details</a>
+                </div>
+            </div>
+        {% empty %}
+            <p>You have no past analyses.</p>
+        {% endfor %}
+    </div>
+</div>
+{% endblock %}
