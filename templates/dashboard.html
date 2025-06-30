@@ -11,14 +11,14 @@
                 <form method="post" enctype="multipart/form-data">
                     {% csrf_token %}
                     <div class="mb-3">
-                        <label for="id_resume_file" class="form-label">Upload Resume (PDF, DOCX, TXT)</label>
+                        <label for="{{ form.resume_file.id_for_label }}" class="form-label">Upload Resume (PDF, DOCX, TXT)</label>
                         {{ form.resume_file }}
                     </div>
                     <div class="mb-3">
-                        <label for="id_job_description" class="form-label">Select Job Role</label>
-                        {{ form.job_description }}
+                        <label for="{{ form.job_role.id_for_label }}" class="form-label">Select Job Role</label>
+                        {{ form.job_role }} <!-- THIS LINE IS NOW CORRECTED -->
                     </div>
-                    <button type="submit" class="btn btn-primary">Analyze</button>
+                    <button type="submit" class="btn btn-primary w-100">Analyze</button>
                 </form>
             </div>
         </div>
@@ -30,7 +30,7 @@
         {% for result in past_results %}
             <div class="card mb-3">
                 <div class="card-body">
-                    <h5 class="card-title">Analysis for {{ result.job_description.title }}</h5>
+                    <h5 class="card-title">Analysis for {{ result.job_role.name }}</h5>
                     <p class="card-text">
                         Analyzed on: {{ result.analyzed_at|date:"F d, Y" }}
                     </p>
@@ -38,7 +38,11 @@
                 </div>
             </div>
         {% empty %}
-            <p>You have no past analyses.</p>
+            <div class="card">
+                <div class="card-body text-center text-muted">
+                    <p class="mb-0">You have no past analyses.</p>
+                </div>
+            </div>
         {% endfor %}
     </div>
 </div>

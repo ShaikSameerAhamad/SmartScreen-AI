@@ -1,9 +1,16 @@
+# core/admin.py
+
 from django.contrib import admin
+from .models import JobRole, Resume, AnalysisResult
 
-# Register your models here.
-from .models import JobDescription, Resume, AnalysisResult
+class JobRoleAdmin(admin.ModelAdmin):
+    list_display = ('name', 'required_skills')
+    search_fields = ('name',)
 
-# Register your models here.
-admin.site.register(JobDescription)
+class AnalysisResultAdmin(admin.ModelAdmin):
+    list_display = ('resume', 'job_role', 'match_score', 'resume_grade', 'analyzed_at')
+    list_filter = ('job_role', 'analyzed_at')
+
+admin.site.register(JobRole, JobRoleAdmin)
 admin.site.register(Resume)
-admin.site.register(AnalysisResult)
+admin.site.register(AnalysisResult, AnalysisResultAdmin)
