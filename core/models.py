@@ -1,5 +1,3 @@
-# core/models.py
-
 from django.db import models
 from django.contrib.auth.models import User
 
@@ -10,7 +8,6 @@ class JobRole(models.Model):
     )
 
     def get_skills_list(self):
-        """Returns a clean list of lowercased skills."""
         return [skill.strip().lower() for skill in self.required_skills.split(',') if skill.strip()]
 
     def __str__(self):
@@ -27,12 +24,17 @@ class Resume(models.Model):
 
 class AnalysisResult(models.Model):
     resume = models.ForeignKey(Resume, on_delete=models.CASCADE)
-    job_role = models.ForeignKey(JobRole, on_delete=models.CASCADE) # No longer optional
+    job_role = models.ForeignKey(JobRole, on_delete=models.CASCADE)
+    
+    # THIS FIELD WAS MISSING. IT IS NOW CORRECTLY ADDED.
+    matched_skills = models.JSONField(default=list)
+    
     match_score = models.FloatField(default=0.0)
     missing_skills = models.JSONField(default=list)
     ai_suggestions = models.TextField(blank=True, null=True)
     resume_grade = models.FloatField(default=0.0)
     grading_feedback = models.JSONField(default=dict)
+    categorized_analysis = models.JSONField(default=dict)
     rewritten_resume_text = models.TextField(blank=True, null=True)
     analyzed_at = models.DateTimeField(auto_now_add=True)
 

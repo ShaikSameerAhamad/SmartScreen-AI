@@ -1,5 +1,6 @@
 <!-- templates/results.html -->
 {% extends 'base.html' %}
+{% load static %}
 
 {% block content %}
 <div class="container py-4">
@@ -25,20 +26,34 @@
                 <div class="card-body">
                     <h5 class="card-title">AI-Powered Suggestions</h5>
                     <p class="card-text" style="white-space: pre-wrap;">{{ result.ai_suggestions }}</p>
+                    
                     <hr>
-                    <h5 class="card-title">Missing Skills</h5>
-                    {% if result.missing_skills %}
-                        <div class="d-flex flex-wrap gap-2">
-                        {% for skill in result.missing_skills %}
-                            <span class="badge bg-warning text-dark">{{ skill }}</span>
-                        {% endfor %}
+                    <h5 class="card-title">Categorical Skill Analysis</h5>
+                    {% for category, data in result.categorized_analysis.items %}
+                        <div class="mb-3">
+                            <strong>{{ category }} ({{ data.score }}%)</strong>
+                            <div class="progress" style="height: 20px;">
+                                <!-- THIS IS THE FIX: The invalid |float filter is removed -->
+                                <div class="progress-bar bg-primary" role="progressbar" style="width: {{ data.score }}%;" aria-valuenow="{{ data.score }}" aria-valuemin="0" aria-valuemax="100"></div>
+                            </div>
+                            {% if data.missing %}
+                                <div class="mt-1">
+                                    <small class="text-muted">
+                                        Missing: 
+                                        {% for skill in data.missing %}
+                                            <span class="badge bg-light text-dark border">{{ skill }}</span>
+                                        {% endfor %}
+                                    </small>
+                                </div>
+                            {% endif %}
                         </div>
-                    {% else %}
-                        <p class="text-success">No missing key skills identified! Great job!</p>
-                    {% endif %}
+                    {% empty %}
+                        <p>No specific skill categories were found in the job description.</p>
+                    {% endfor %}
                 </div>
             </div>
-            <div class="card">
+            
+            <div class="card mt-4">
                 <div class="card-header"><h4>AI Resume Rewrite</h4></div>
                 <div class="card-body text-center">
                     <p class="text-muted">Unlock our premium AI to rewrite your resume for this specific role, optimizing it for ATS scanners.</p>
@@ -49,11 +64,10 @@
         <div class="col-lg-4">
             <div class="card text-center mb-4">
                 <div class="card-header">
-                    <h4>Skill Match Score</h4>
+                    <h4>Overall Skill Match</h4>
                 </div>
                 <div class="card-body">
                     <h1 class="display-4 fw-bold text-primary">{{ result.match_score }}%</h1>
-                    <p class="text-muted">Based on skills required for the {{ result.job_role.name }} role.</p>
                 </div>
             </div>
             <div class="card">
@@ -64,7 +78,7 @@
                     <h1 class="display-4 fw-bold text-success">{{ result.resume_grade }}/100</h1>
                     <ul class="list-group list-group-flush mt-3 text-start">
                         {% for key, value in result.grading_feedback.items %}
-                        <li class="list-group-item">{{ value }}</li>
+                            <li class="list-group-item">{{ value }}</li>
                         {% endfor %}
                     </ul>
                 </div>
@@ -74,6 +88,7 @@
     <a href="{% url 'dashboard' %}" class="btn btn-secondary mt-4">Back to Dashboard</a>
 </div>
 
+<!-- Premium Feature Modal -->
 <div class="modal fade" id="premiumModal" tabindex="-1" aria-labelledby="premiumModalLabel" aria-hidden="true">
   <div class="modal-dialog">
     <div class="modal-content">
@@ -83,7 +98,6 @@
       </div>
       <div class="modal-body">
         <p><strong>Coming Soon!</strong></p>
-        <p>Upgrade to unlock powerful features like:</p>
         <ul>
             <li>Unlimited resume scans</li>
             <li>Advanced AI-powered resume rewriting</li>
