@@ -2,45 +2,47 @@
 {% extends 'base.html' %}
 
 {% block content %}
-<div class="row">
-    <!-- Upload Form Section -->
-    <div class="col-md-5">
+<div class="row g-4">
+    <!-- Upload Form Section (Column 1) -->
+    <div class="col-lg-5">
         <h2>Analyze New Resume</h2>
         <div class="card">
             <div class="card-body">
                 <form method="post" enctype="multipart/form-data">
                     {% csrf_token %}
                     <div class="mb-3">
-                        <label for="{{ form.resume_file.id_for_label }}" class="form-label">Upload Resume (PDF, DOCX, TXT)</label>
+                        <label for="{{ form.resume_file.id_for_label }}" class="form-label">Upload Resume</label>
                         {{ form.resume_file }}
                     </div>
                     <div class="mb-3">
                         <label for="{{ form.job_role.id_for_label }}" class="form-label">Select Job Role</label>
-                        {{ form.job_role }} <!-- THIS LINE IS NOW CORRECTED -->
+                        {{ form.job_role }}
                     </div>
-                    <button type="submit" class="btn btn-primary w-100">Analyze</button>
+                    <button type="submit" class="btn btn-primary w-100">Analyze Now</button>
                 </form>
             </div>
         </div>
     </div>
-
-    <!-- Past Results Section -->
-    <div class="col-md-7">
+    
+    <!-- Analysis History Section (Column 2) -->
+    <div class="col-lg-7">
         <h2>Analysis History</h2>
         {% for result in past_results %}
             <div class="card mb-3">
-                <div class="card-body">
-                    <h5 class="card-title">Analysis for {{ result.job_role.name }}</h5>
-                    <p class="card-text">
-                        Analyzed on: {{ result.analyzed_at|date:"F d, Y" }}
-                    </p>
+                <div class="card-body d-flex justify-content-between align-items-center">
+                    <div>
+                        <h5 class="card-title mb-1">Analysis for {{ result.job_role.name }}</h5>
+                        <p class="card-text text-muted small">
+                            Analyzed on: {{ result.analyzed_at|date:"F d, Y" }}
+                        </p>
+                    </div>
                     <a href="{% url 'results' result.id %}" class="btn btn-secondary btn-sm">View Details</a>
                 </div>
             </div>
         {% empty %}
             <div class="card">
                 <div class="card-body text-center text-muted">
-                    <p class="mb-0">You have no past analyses.</p>
+                    <p class="mb-0">You have no past analyses. Upload a resume to get started!</p>
                 </div>
             </div>
         {% endfor %}

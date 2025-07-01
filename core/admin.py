@@ -8,7 +8,8 @@ class JobRoleAdmin(admin.ModelAdmin):
     search_fields = ('name',)
 
 class AnalysisResultAdmin(admin.ModelAdmin):
-    list_display = ('resume', 'job_role', 'match_score', 'resume_grade', 'analyzed_at')
+    # This line is now corrected to use 'improvement_score'
+    list_display = ('resume', 'job_role', 'match_score', 'improvement_score', 'analyzed_at')
     list_filter = ('job_role', 'analyzed_at')
 
 admin.site.register(JobRole, JobRoleAdmin)

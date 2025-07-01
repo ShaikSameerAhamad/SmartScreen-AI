@@ -33,7 +33,6 @@
                         <div class="mb-3">
                             <strong>{{ category }} ({{ data.score }}%)</strong>
                             <div class="progress" style="height: 20px;">
-                                <!-- THIS IS THE FIX: The invalid |float filter is removed -->
                                 <div class="progress-bar bg-primary" role="progressbar" style="width: {{ data.score }}%;" aria-valuenow="{{ data.score }}" aria-valuemin="0" aria-valuemax="100"></div>
                             </div>
                             {% if data.missing %}
@@ -70,8 +69,27 @@
                     <h1 class="display-4 fw-bold text-primary">{{ result.match_score }}%</h1>
                 </div>
             </div>
+
+            <!-- START: Corrected Conditional Logic -->
+
+            <!-- This card will ONLY appear if there is an improvement score -->
+            {% if result.improvement_score is not None %}
+                <div class="card mb-4">
+                    <div class="card-header text-center">
+                        <h4>Resume Skill Improvement</h4>
+                    </div>
+                    <div class="card-body d-flex justify-content-center align-items-center" style="min-height: 250px;">
+                        <div style="position: relative; width: 250px; height: 125px;">
+                            <canvas id="gaugeChart"></canvas>
+                            <div id="gaugeValue" style="position: absolute; bottom: 0; width: 100%; text-align: center; font-size: 1.5rem; font-weight: bold;"></div>
+                        </div>
+                    </div>
+                </div>
+            {% endif %}
+
+            <!-- This card will ALWAYS be displayed -->
             <div class="card">
-                <div class="card-header">
+                <div class="card-header text-center">
                     <h4>Overall Resume Grade</h4>
                 </div>
                 <div class="card-body">
@@ -83,6 +101,7 @@
                     </ul>
                 </div>
             </div>
+            <!-- END: Corrected Conditional Logic -->
         </div>
     </div>
     <a href="{% url 'dashboard' %}" class="btn btn-secondary mt-4">Back to Dashboard</a>
@@ -110,4 +129,70 @@
     </div>
   </div>
 </div>
+
+<!-- JavaScript for the Speedometer Chart -->
+<script>
+    const improvementScore = {{ result.improvement_score|default:"null" }};
+</script>
+<script>
+    document.addEventListener('DOMContentLoaded', function() {
+        const gaugeCanvas = document.getElementById('gaugeChart');
+        if (gaugeCanvas && improvementScore !== null) {
+            const ctx = gaugeCanvas.getContext('2d');
+            const gaugeValueElement = document.getElementById('gaugeValue');
+            let score = 50 + (improvementScore * 2);
+            score = Math.max(0, Math.min(100, score));
+            const needleValue = (score / 100) * 180;
+
+            if (improvementScore > 0) {
+                gaugeValueElement.textContent = `+${improvementScore.toFixed(1)}% Improved`;
+                gaugeValueElement.style.color = '#198754';
+            } else if (improvementScore < 0) {
+                gaugeValueElement.textContent = `${improvementScore.toFixed(1)}%`;
+                gaugeValueElement.style.color = '#dc3545';
+            } else {
+                gaugeValueElement.textContent = `No Change`;
+                gaugeValueElement.style.color = '#6c757d';
+            }
+
+            new Chart(ctx, {
+                type: 'doughnut',
+                data: {
+                    labels: ['Danger', 'Moderate', 'Good'],
+                    datasets: [{
+                        data: [33, 34, 33],
+                        backgroundColor: ['rgba(220, 53, 69, 0.7)', 'rgba(255, 193, 7, 0.7)', 'rgba(25, 135, 84, 0.7)'],
+                        borderColor: '#fff',
+                        borderWidth: 2
+                    }]
+                },
+                options: { rotation: -90, circumference: 180, cutout: '60%', responsive: true, plugins: { legend: { display: false }, tooltip: { enabled: false } } },
+                plugins: [{
+                    id: 'gaugeNeedle',
+                    afterDraw: (chart) => {
+                        const { ctx, chartArea } = chart;
+                        const { bottom, left, right } = chartArea;
+                        const angle = Math.PI + (needleValue / 180) * Math.PI;
+                        const cx = (left + right) / 2;
+                        const cy = bottom;
+                        ctx.save();
+                        ctx.translate(cx, cy);
+                        ctx.rotate(angle);
+                        ctx.beginPath();
+                        ctx.moveTo(0, -5);
+                        ctx.lineTo(chart.innerRadius - 10, 0);
+                        ctx.lineTo(0, 5);
+                        ctx.fillStyle = '#444';
+                        ctx.fill();
+                        ctx.beginPath();
+                        ctx.arc(0, 0, 8, 0, 2 * Math.PI);
+                        ctx.fillStyle = '#444';
+                        ctx.fill();
+                        ctx.restore();
+                    }
+                }]
+            });
+        }
+    });
+</script>
 {% endblock %}

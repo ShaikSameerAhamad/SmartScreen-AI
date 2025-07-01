@@ -7,9 +7,6 @@ class JobRole(models.Model):
         help_text="Enter skills separated by commas, e.g., Python, Django, REST API"
     )
 
-    def get_skills_list(self):
-        return [skill.strip().lower() for skill in self.required_skills.split(',') if skill.strip()]
-
     def __str__(self):
         return self.name
 
@@ -26,17 +23,22 @@ class AnalysisResult(models.Model):
     resume = models.ForeignKey(Resume, on_delete=models.CASCADE)
     job_role = models.ForeignKey(JobRole, on_delete=models.CASCADE)
     
-    # THIS FIELD WAS MISSING. IT IS NOW CORRECTLY ADDED.
-    matched_skills = models.JSONField(default=list)
-    
+    # Scores and Analysis Data
     match_score = models.FloatField(default=0.0)
+    matched_skills = models.JSONField(default=list)
     missing_skills = models.JSONField(default=list)
-    ai_suggestions = models.TextField(blank=True, null=True)
+    categorized_analysis = models.JSONField(default=dict)
+    
+    # Resume Grading Data (for first-time analysis)
     resume_grade = models.FloatField(default=0.0)
     grading_feedback = models.JSONField(default=dict)
-    categorized_analysis = models.JSONField(default=dict)
-    rewritten_resume_text = models.TextField(blank=True, null=True)
+
+    # Improvement Score Data (for subsequent analyses)
+    improvement_score = models.FloatField(null=True, blank=True)
+    
+    # AI Suggestions and Timestamps
+    ai_suggestions = models.TextField(blank=True, null=True)
     analyzed_at = models.DateTimeField(auto_now_add=True)
 
     def __str__(self):
-        return f"Analysis for {self.resume.user.username} vs {self.job_role.name}"
+        return f"Analysis for {self.resume.user.username} vs {self.job_role.name} on {self.analyzed_at.date()}"

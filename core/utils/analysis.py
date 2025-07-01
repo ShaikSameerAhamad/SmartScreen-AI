@@ -8,7 +8,7 @@ from pdf2image import convert_from_bytes
 import io
 import docx
 import pdfplumber
-
+from .llm_handler import generate_llm_suggestions
 # --- Configuration ---
 pytesseract.pytesseract.tesseract_cmd = r'C:\Users\91944\AppData\Local\Programs\Tesseract-OCR\tesseract.exe'
 POPPLER_PATH = r'C:\poppler-24.08.0\Library\bin'
@@ -136,15 +136,16 @@ def perform_full_analysis(resume_text, job_role_model):
     overall_score = (len(all_matched_skills) / len(all_required_skills)) * 100 if all_required_skills else 0
     all_missing_skills = all_required_skills.difference(all_matched_skills)
     
-    suggestions = f"To better align with this role, focus on these missing skills: {', '.join(sorted(list(all_missing_skills)))}." if all_missing_skills else "Excellent! Your resume has all the key skills required."
-    
+     # --- NEW: Replace template suggestions with LLM-generated suggestions ---
+    print("[INFO] Generating LLM-powered suggestions...")
+    suggestions = generate_llm_suggestions(resume_text, job_role_model.required_skills)
     grade, grading_feedback = grade_resume(resume_text)
 
     return {
         "match_score": round(overall_score, 2),
         "missing_skills": list(all_missing_skills),
         "matched_skills": list(all_matched_skills),
-        "ai_suggestions": suggestions,
+        "ai_suggestions": suggestions,#LLM response
         "resume_grade": grade,
         "grading_feedback": grading_feedback,
         "categorized_analysis": categorical_analysis

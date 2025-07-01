@@ -1,15 +1,17 @@
+# core/views.py
+
 from django.shortcuts import render, redirect
+from django.contrib.auth.decorators import login_required
+from .forms import ResumeUploadForm, RegistrationForm
+from .models import AnalysisResult, JobRole
+from .utils.analysis import extract_text, perform_full_analysis
+# Make sure all other necessary imports like login, logout, etc., are present
 from django.contrib.auth import login, authenticate, logout
 from django.contrib.auth.forms import AuthenticationForm
-from django.contrib.auth.decorators import login_required
 from django.http import HttpResponse
-from .forms import RegistrationForm, ResumeUploadForm
-from .models import Resume, JobRole, AnalysisResult
-from .utils.analysis import extract_text, perform_full_analysis
 from .utils.pdf_generator import render_to_pdf
 from datetime import datetime
 
-# ... (register, login, logout views are unchanged)
 def register_view(request):
     if request.method == 'POST':
         form = RegistrationForm(request.POST)
@@ -39,17 +41,33 @@ def dashboard_view(request):
     if request.method == 'POST':
         form = ResumeUploadForm(request.POST, request.FILES)
         if form.is_valid():
+            job_role_instance = form.cleaned_data['job_role']
+            
+            # Save resume and extract text
             resume_instance = form.save(commit=False)
             resume_instance.user = request.user
-            
             uploaded_file = request.FILES['resume_file']
             extracted_text = extract_text(uploaded_file)
             resume_instance.extracted_text = extracted_text
             resume_instance.save()
 
-            job_role_instance = form.cleaned_data['job_role']
+            # Perform the main analysis
             analysis_data = perform_full_analysis(extracted_text, job_role_instance)
 
+            # --- NEW: Conditional Improvement Score Calculation ---
+            improvement_score = None
+            # Find the most recent previous analysis for this user and job role
+            previous_analysis = AnalysisResult.objects.filter(
+                resume__user=request.user,
+                job_role=job_role_instance
+            ).order_by('-analyzed_at').first()
+
+            if previous_analysis:
+                # Calculate the difference in percentage points
+                improvement_score = analysis_data['match_score'] - previous_analysis.match_score
+            # --- END: New Logic ---
+
+            # Create the result object with ALL possible data
             result = AnalysisResult.objects.create(
                 resume=resume_instance,
                 job_role=job_role_instance,
@@ -57,17 +75,26 @@ def dashboard_view(request):
                 matched_skills=analysis_data['matched_skills'],
                 missing_skills=analysis_data['missing_skills'],
                 ai_suggestions=analysis_data['ai_suggestions'],
+                categorized_analysis=analysis_data['categorized_analysis'],
                 resume_grade=analysis_data['resume_grade'],
                 grading_feedback=analysis_data['grading_feedback'],
-                categorized_analysis=analysis_data['categorized_analysis']
+                improvement_score=improvement_score # This will be None for the first analysis
             )
+            
             return redirect('results', result_id=result.id)
     else:
         form = ResumeUploadForm()
     
+    # Fetch history for the list view
     past_results = AnalysisResult.objects.filter(resume__user=request.user).order_by('-analyzed_at')
-    context = {'form': form, 'past_results': past_results}
+
+    # The chart data is no longer needed here
+    context = {
+        'form': form,
+        'past_results': past_results,
+    }
     return render(request, 'dashboard.html', context)
+
 
 @login_required
 def results_view(request, result_id):
