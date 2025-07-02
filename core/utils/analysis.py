@@ -86,22 +86,58 @@ def extract_categorized_skills(text):
     return {cat: skills for cat, skills in categorized_skills.items() if skills}
 
 def grade_resume(text):
+    """
+    Grades a resume based on a more advanced set of rules, including
+    a wider range of action verbs and quantifiable metrics.
+    """
     feedback = {}
     score = 0
     word_count = len(text.split())
+    text_lower = text.lower()
+
+    # Rule 1: Resume Length (unchanged)
     if word_count < 200: score += 5; feedback['length'] = f"Resume is very brief ({word_count} words). Consider expanding."
     elif 400 <= word_count <= 800: score += 25; feedback['length'] = f"Good length ({word_count} words)."
     else: score += 15; feedback['length'] = f"Consider adjusting length ({word_count} words)."
-    sections_found = [s for s in ['experience', 'skills', 'education', 'projects'] if re.search(r'\b' + s + r'\b', text, re.IGNORECASE)]
+
+    # Rule 2: Presence of Important Sections (unchanged)
+    sections_found = [s for s in ['experience', 'skills', 'education', 'projects'] if re.search(r'\b' + s + r'\b', text_lower)]
     if len(sections_found) >= 2: score += 25
     feedback['sections'] = f"Found {len(sections_found)} key sections."
-    action_verbs = ['developed', 'led', 'managed', 'created', 'implemented', 'designed', 'optimized', 'analyzed', 'built']
-    verb_count = sum(1 for verb in action_verbs if verb in text.lower())
-    if verb_count >= 3: score += 25; feedback['action_verbs'] = f"Good use of action verbs ({verb_count} found)."
-    else: score += 10; feedback['action_verbs'] = "Use more powerful action verbs."
-    quantifiable_count = len(re.findall(r'(\d+%|\d+\s*percent|\$\d+|\d+x\b)', text.lower()))
-    if quantifiable_count >= 1: score += 25; feedback['quantifiable_results'] = f"Excellent! Found {quantifiable_count} quantifiable result(s)."
-    else: score += 10; feedback['quantifiable_results'] = "Add quantifiable results to show impact."
+
+    # Rule 3: Use of Action Verbs (ENHANCED)
+    strong_action_verbs = [
+        'achieved', 'accelerated', 'accomplished', 'architected', 'automated', 'built', 'conceived',
+        'created', 'designed', 'developed', 'directed', 'engineered', 'founded', 'generated',
+        'implemented', 'improved', 'increased', 'initiated', 'innovated', 'instituted', 'launched',
+        'led', 'managed', 'negotiated', 'optimized', 'overhauled', 'pioneered', 'produced',
+        'reduced', 're-engineered', 'resolved', 'revamped', 'spearheaded', 'streamlined', 'strengthened'
+    ]
+    verb_count = sum(1 for verb in strong_action_verbs if re.search(r'\b' + verb + r'\b', text_lower))
+    if verb_count >= 5:
+        score += 25
+        feedback['action_verbs'] = f"Excellent! Found {verb_count} strong action verbs."
+    elif verb_count >= 2:
+        score += 15
+        feedback['action_verbs'] = f"Good start with {verb_count} action verbs. Try to add more to describe your impact."
+    else:
+        score += 5
+        feedback['action_verbs'] = "Weak use of action verbs. Use verbs like 'developed', 'managed', 'optimized' to show initiative."
+
+    # Rule 4: Use of Quantifiable Results (ENHANCED)
+    # This regex looks for percentages, dollar amounts, 'x' multipliers (like 10x), and numbers followed by keywords.
+    metric_patterns = r'(\d+%|\d+\s*percent|\$\d+|\d+x\b|\d+\s*(?:users|customers|clients|projects|team members|requests|downloads|sales))'
+    quantifiable_count = len(re.findall(metric_patterns, text_lower))
+    if quantifiable_count >= 2:
+        score += 25
+        feedback['quantifiable_metrics'] = f"Excellent! Found {quantifiable_count} quantifiable metrics that demonstrate your impact."
+    elif quantifiable_count == 1:
+        score += 15
+        feedback['quantifiable_metrics'] = "Good start! You have one quantifiable metric. Adding more will strengthen your resume."
+    else:
+        score += 5
+        feedback['quantifiable_metrics'] = "Add quantifiable results to show impact (e.g., 'increased efficiency by 20%' or 'managed a team of 5')."
+
     return min(score, 100), feedback
 
 # --- MAIN ANALYSIS FUNCTION ---
