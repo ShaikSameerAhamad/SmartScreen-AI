@@ -1,8 +1,8 @@
-<!-- templates/results.html -->
 {% extends 'base.html' %}
 {% load static %}
+{% load markdown_extras %}
 
-{% load markdown_extras %} {% block content %}
+{% block content %}
 <div class="container py-4">
     <div class="d-flex justify-content-between align-items-center mb-4">
         <h2>Analysis Result</h2>
@@ -25,7 +25,7 @@
                 </div>
                 <div class="card-body">
                     <h5 class="card-title">AI-Powered Suggestions</h5>
-                    <p class="card-text">{{ result.ai_suggestions|markdown}}</p>
+                    <div class="card-text">{{ result.ai_suggestions|markdown }}</div>
                     
                     <hr>
                     <h5 class="card-title">Categorical Skill Analysis</h5>
@@ -35,17 +35,38 @@
                             <div class="progress" style="height: 20px;">
                                 <div class="progress-bar bg-primary" role="progressbar" style="width: {{ data.score }}%;" aria-valuenow="{{ data.score }}" aria-valuemin="0" aria-valuemax="100"></div>
                             </div>
+
                             {% if data.missing %}
-                                <div class="mt-1">
-                                    <small class="text-muted">
-                                        Missing: 
-                                        {% for skill in data.missing %}
-                                            <span class="badge bg-light text-dark border">{{ skill }}</span>
-                                        {% endfor %}
-                                    </small>
+                                <div class="accordion accordion-flush mt-2" id="accordion-{{ forloop.counter }}">
+                                    {% for skill in data.missing %}
+                                    <div class="accordion-item">
+                                        <h2 class="accordion-header" id="heading-{{ forloop.parentloop.counter }}-{{ forloop.counter }}">
+                                            <button class="accordion-button collapsed p-2" type="button" data-bs-toggle="collapse" data-bs-target="#collapse-{{ forloop.parentloop.counter }}-{{ forloop.counter }}">
+                                                <span class="badge bg-warning text-dark me-2">Missing</span> {{ skill|capfirst }}
+                                            </button>
+                                        </h2>
+                                        <div id="collapse-{{ forloop.parentloop.counter }}-{{ forloop.counter }}" class="accordion-collapse collapse" data-bs-parent="#accordion-{{ forloop.parentloop.counter }}">
+                                            <div class="accordion-body">
+                                                {% with resource=learning_resources|get_item:skill %}
+                                                    {% if resource %}
+                                                        <p><strong>What is {{ skill|capfirst }}?</strong><br>{{ resource.definition }}</p>
+                                                        <p><strong>Example for your resume:</strong><br><code class="d-block p-2 bg-light">{{ resource.resume_bullet_template }}</code></p>
+                                                        <strong>Learn More:</strong>
+                                                        <ul class="list-unstyled mt-1">
+                                                            {% if resource.youtube_link %}<li><a href="{{ resource.youtube_link }}" target="_blank">📺 Watch on YouTube</a></li>{% endif %}
+                                                            {% if resource.course_link %}<li><a href="{{ resource.course_link }}" target="_blank">🎓 Take a Course</a></li>{% endif %}
+                                                        </ul>
+                                                    {% else %}
+                                                        <p class="text-muted small">No learning resources available for this skill yet.</p>
+                                                    {% endif %}
+                                                {% endwith %}
+                                            </div>
+                                        </div>
+                                    </div>
+                                    {% endfor %}
                                 </div>
                             {% endif %}
-                        </div>
+                            </div>
                     {% empty %}
                         <p>No specific skill categories were found in the job description.</p>
                     {% endfor %}
@@ -70,9 +91,6 @@
                 </div>
             </div>
 
-            <!-- START: Corrected Conditional Logic -->
-
-            <!-- This card will ONLY appear if there is an improvement score -->
             {% if result.improvement_score is not None %}
                 <div class="card mb-4">
                     <div class="card-header text-center">
@@ -87,7 +105,6 @@
                 </div>
             {% endif %}
 
-            <!-- This card will ALWAYS be displayed -->
             <div class="card">
                 <div class="card-header text-center">
                     <h4>Overall Resume Grade</h4>
@@ -101,13 +118,11 @@
                     </ul>
                 </div>
             </div>
-            <!-- END: Corrected Conditional Logic -->
         </div>
     </div>
     <a href="{% url 'dashboard' %}" class="btn btn-secondary mt-4">Back to Dashboard</a>
 </div>
 
-<!-- Premium Feature Modal -->
 <div class="modal fade" id="premiumModal" tabindex="-1" aria-labelledby="premiumModalLabel" aria-hidden="true">
   <div class="modal-dialog">
     <div class="modal-content">
@@ -130,7 +145,6 @@
   </div>
 </div>
 
-<!-- JavaScript for the Speedometer Chart -->
 <script>
     const improvementScore = {{ result.improvement_score|default:"null" }};
 </script>

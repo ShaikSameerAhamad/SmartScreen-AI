@@ -58,3 +58,14 @@ class AnalysisResult(models.Model):
     
     def __str__(self):
         return f"Analysis for {self.resume.user.username} vs {self.job_role.name} on {self.analyzed_at.date()}"
+    
+# --- NEW: Add the LearningResource model ---
+class LearningResource(models.Model):
+    skill_name = models.CharField(max_length=100, unique=True, primary_key=True)
+    definition = models.TextField(help_text="A brief, one-sentence definition of the skill.")
+    youtube_link = models.URLField(max_length=255, blank=True, null=True, help_text="A link to a helpful YouTube tutorial.")
+    course_link = models.URLField(max_length=255, blank=True, null=True, help_text="A link to a high-quality course (e.g., Coursera, Udemy).")
+    resume_bullet_template = models.TextField(help_text="A template sentence for a resume bullet point, using {skill} as a placeholder.")
+
+    def __str__(self):
+        return self.skill_name

@@ -3,7 +3,7 @@
 from django.shortcuts import render, redirect
 from django.contrib.auth.decorators import login_required
 from .forms import ResumeUploadForm, RegistrationForm
-from .models import AnalysisResult, JobRole
+from .models import AnalysisResult, JobRole,LearningResource
 from .utils.analysis import extract_text, perform_full_analysis
 # Make sure all other necessary imports like login, logout, etc., are present
 from django.contrib.auth import login, authenticate, logout
@@ -117,9 +117,21 @@ def results_view(request, result_id):
         result = AnalysisResult.objects.get(id=result_id, resume__user=request.user)
     except AnalysisResult.DoesNotExist:
         return redirect('dashboard')
-    context = {'result': result}
-    return render(request, 'results.html', context)
 
+    # --- NEW: Fetch Learning Resources for Missing Skills ---
+    missing_skills_list = result.missing_skills
+    # Create a dictionary mapping each missing skill to its LearningResource object
+    learning_resources = {
+        resource.skill_name: resource 
+        for resource in LearningResource.objects.filter(skill_name__in=missing_skills_list)
+    }
+    # --- END: New Logic ---
+
+    context = {
+        'result': result,
+        'learning_resources': learning_resources, # Pass new data to the template
+    }
+    return render(request, 'results.html', context)
 @login_required
 def download_pdf_view(request, result_id):
     try:

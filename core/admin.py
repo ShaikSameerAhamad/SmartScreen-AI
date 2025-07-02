@@ -1,7 +1,7 @@
 # core/admin.py
 
 from django.contrib import admin
-from .models import JobRole, Resume, AnalysisResult
+from .models import JobRole, Resume, AnalysisResult,LearningResource
 
 class JobRoleAdmin(admin.ModelAdmin):
     list_display = ('name', 'required_skills')
@@ -15,3 +15,4 @@ class AnalysisResultAdmin(admin.ModelAdmin):
 admin.site.register(JobRole, JobRoleAdmin)
 admin.site.register(Resume)
 admin.site.register(AnalysisResult, AnalysisResultAdmin)
+admin.site.register(LearningResource)
