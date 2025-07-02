@@ -24,18 +24,43 @@ class RegistrationForm(UserCreationForm):
 class ResumeUploadForm(forms.ModelForm):
     job_role = forms.ModelChoiceField(
         queryset=JobRole.objects.all(),
-        empty_label="-- Select a Job Role --",
+        empty_label="-- Select a Saved Role --",
         widget=forms.Select(attrs={'class': 'form-select'}),
-        label="Target Job Role",
-        required=True # It is now required
+        label="Option A: Select a Saved Role",
+        required=False 
+    )
+
+    # Add the new text area for custom job descriptions
+    custom_job_description = forms.CharField(
+        widget=forms.Textarea(attrs={'class': 'form-control', 'rows': 10, 'placeholder': 'Or paste the full job description here...'}),
+        label="Option B: Paste Job Description",
+        required=False
     )
 
     class Meta:
         model = Resume
-        fields = ['resume_file', 'job_role']
+        # The form is now responsible for resume_file, job_role, and custom_job_description
+        fields = ['resume_file', 'job_role', 'custom_job_description'] 
         widgets = {
             'resume_file': forms.ClearableFileInput(attrs={'class': 'form-control'}),
         }
+        labels = {
+            'resume_file': '1. Upload Resume'
+        }
+
+    # Add custom validation logic
+    def clean(self):
+        cleaned_data = super().clean()
+        job_role = cleaned_data.get("job_role")
+        custom_jd = cleaned_data.get("custom_job_description")
+
+        if not job_role and not custom_jd:
+            raise ValidationError("You must either select a job role or paste a custom job description.", code='required')
+        
+        if job_role and custom_jd:
+            raise ValidationError("Please either select a job role OR paste a custom description, not both.", code='invalid')
+
+        return cleaned_data
 
     def clean_resume_file(self):
         file = self.cleaned_data.get('resume_file', False)

@@ -36,41 +36,57 @@ def logout_view(request):
     logout(request)
     return redirect('login')
 
+
+
 @login_required
 def dashboard_view(request):
     if request.method == 'POST':
         form = ResumeUploadForm(request.POST, request.FILES)
         if form.is_valid():
-            job_role_instance = form.cleaned_data['job_role']
+            # --- THIS IS THE CORRECTED LOGIC ---
+            job_role_instance = form.cleaned_data.get('job_role')
+            custom_jd_text = form.cleaned_data.get('custom_job_description')
             
-            # Save resume and extract text
+            # Prepare arguments for the analysis function
+            job_skills_text = ""
+            full_jd_text = ""
+            
+            if job_role_instance:
+                # For predefined roles, use the specific fields from the model
+                job_skills_text = job_role_instance.required_skills
+                full_jd_text = job_role_instance.full_description
+            elif custom_jd_text:
+                # For custom roles, the skill list and full description are the same text
+                job_skills_text = custom_jd_text
+                full_jd_text = custom_jd_text
+            # --- END CORRECTED LOGIC ---
+
             resume_instance = form.save(commit=False)
             resume_instance.user = request.user
+            
             uploaded_file = request.FILES['resume_file']
             extracted_text = extract_text(uploaded_file)
             resume_instance.extracted_text = extracted_text
             resume_instance.save()
 
-            # Perform the main analysis
-            analysis_data = perform_full_analysis(extracted_text, job_role_instance)
+            # Call the analysis function with all required arguments
+            analysis_data = perform_full_analysis(extracted_text, job_skills_text, full_jd_text)
 
-            # --- NEW: Conditional Improvement Score Calculation ---
+            # --- Logic to calculate improvement score ---
             improvement_score = None
-            # Find the most recent previous analysis for this user and job role
-            previous_analysis = AnalysisResult.objects.filter(
-                resume__user=request.user,
-                job_role=job_role_instance
-            ).order_by('-analyzed_at').first()
-
-            if previous_analysis:
-                # Calculate the difference in percentage points
-                improvement_score = analysis_data['match_score'] - previous_analysis.match_score
-            # --- END: New Logic ---
-
-            # Create the result object with ALL possible data
+            if job_role_instance:
+                previous_analysis = AnalysisResult.objects.filter(
+                    resume__user=request.user,
+                    job_role=job_role_instance
+                ).order_by('-analyzed_at').first()
+                if previous_analysis:
+                    improvement_score = analysis_data['match_score'] - previous_analysis.match_score
+            
+            # Create the final result object
             result = AnalysisResult.objects.create(
                 resume=resume_instance,
                 job_role=job_role_instance,
+                custom_job_description=custom_jd_text,
                 match_score=analysis_data['match_score'],
                 matched_skills=analysis_data['matched_skills'],
                 missing_skills=analysis_data['missing_skills'],
@@ -78,23 +94,22 @@ def dashboard_view(request):
                 categorized_analysis=analysis_data['categorized_analysis'],
                 resume_grade=analysis_data['resume_grade'],
                 grading_feedback=analysis_data['grading_feedback'],
-                improvement_score=improvement_score # This will be None for the first analysis
+                improvement_score=improvement_score
             )
-            
             return redirect('results', result_id=result.id)
     else:
         form = ResumeUploadForm()
     
-    # Fetch history for the list view
+    all_roles = JobRole.objects.order_by('category', 'name')
+    grouped_roles = {}
+    uncategorized_key = "Other Roles" 
+    for role in all_roles:
+        category_key = role.category if role.category and role.category.strip() else uncategorized_key
+        if category_key not in grouped_roles: grouped_roles[category_key] = []
+        grouped_roles[category_key].append(role)
     past_results = AnalysisResult.objects.filter(resume__user=request.user).order_by('-analyzed_at')
-
-    # The chart data is no longer needed here
-    context = {
-        'form': form,
-        'past_results': past_results,
-    }
+    context = {'form': form, 'past_results': past_results, 'grouped_roles': grouped_roles}
     return render(request, 'dashboard.html', context)
-
 
 @login_required
 def results_view(request, result_id):

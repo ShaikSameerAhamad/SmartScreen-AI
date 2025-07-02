@@ -3,15 +3,14 @@ import os
 import requests
 import json
 
-# --- NEW: Configuration for Google Gemini API ---
-# We use "gemini-pro" as it's a stable and powerful model for this task.
+# --- Configuration for Google Gemini API ---
 API_URL = f"https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash-latest:generateContent?key={os.getenv('GOOGLE_API_KEY')}"
 headers = {"Content-Type": "application/json"}
 
 def generate_llm_suggestions(resume_text, job_description_text):
-    # The prompt remains the same, as it's high-quality
+    # --- THIS IS THE UPDATED PROMPT ---
     prompt = f"""
-    As an expert career coach, your task is to provide constructive feedback on a resume based on a specific job description.
+    As an expert career coach, your task is to provide a concise, actionable critique of a resume based on a specific job description.
 
     **Job Description:**
     ---
@@ -24,21 +23,23 @@ def generate_llm_suggestions(resume_text, job_description_text):
     ---
 
     **Your Task:**
-    Provide a concise, actionable critique in 2-3 paragraphs. Focus on:
-    1.  Overall alignment with the role.
-    2.  Specific strengths to emphasize.
-    3.  Key areas for improvement or skills to highlight more effectively.
-    
-    Do not just list missing skills. Provide strategic advice.
+    Format your entire response as a list of 3-5 important bullet points. Each bullet point must be a specific, actionable recommendation for how the user can improve their resume to better match this job. Start each point with a clear heading in bold.
     """
 
-    # --- NEW: Payload structure for Gemini API ---
+    # Payload structure for Gemini API
     payload = {
         "contents": [{
             "parts": [{
                 "text": prompt
             }]
-        }]
+        }],
+        # Add safety settings to reduce the chance of the response being blocked
+        "safetySettings": [
+            {"category": "HARM_CATEGORY_HARASSMENT", "threshold": "BLOCK_NONE"},
+            {"category": "HARM_CATEGORY_HATE_SPEECH", "threshold": "BLOCK_NONE"},
+            {"category": "HARM_CATEGORY_SEXUALLY_EXPLICIT", "threshold": "BLOCK_NONE"},
+            {"category": "HARM_CATEGORY_DANGEROUS_CONTENT", "threshold": "BLOCK_NONE"}
+        ]
     }
 
     try:
@@ -50,16 +51,21 @@ def generate_llm_suggestions(resume_text, job_description_text):
             return f"Could not generate AI suggestions due to an API error. (Status: {response.status_code})"
 
         output = response.json()
-
-        # --- NEW: Parsing logic for Gemini's response structure ---
-        if 'candidates' in output and output['candidates']:
-            # Check if 'parts' exists and is not empty
-            if 'parts' in output['candidates'][0]['content'] and output['candidates'][0]['content']['parts']:
-                return output['candidates'][0]['content']['parts'][0]['text'].strip()
         
-        # Handle cases where the response might be blocked or have an error
-        print(f"LLM API Error: Unexpected response format or content blocked: {output}")
-        return "Could not generate AI suggestions. The response may have been blocked for safety reasons or was in an unexpected format."
+        # Check for candidates and parts before accessing them
+        if 'candidates' in output and output['candidates']:
+            content = output['candidates'][0].get('content', {})
+            if 'parts' in content and content['parts']:
+                return content['parts'][0].get('text', 'The model returned an empty suggestion.').strip()
+        
+        # Handle cases where the response might be blocked for safety reasons
+        if 'promptFeedback' in output and output['promptFeedback'].get('blockReason'):
+            reason = output['promptFeedback']['blockReason']
+            print(f"LLM content blocked. Reason: {reason}")
+            return "Could not generate AI suggestions because the prompt was blocked for safety reasons. Please try rephrasing the job description."
+        
+        print(f"LLM API Error: Unexpected response format: {output}")
+        return "Could not parse the model's response."
 
 
     except requests.exceptions.RequestException as e:

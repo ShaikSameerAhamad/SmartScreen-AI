@@ -1,3 +1,4 @@
+# core/utils/analysis.py
 import re
 import os
 import spacy
@@ -9,6 +10,7 @@ import io
 import docx
 import pdfplumber
 from .llm_handler import generate_llm_suggestions
+
 # --- Configuration ---
 pytesseract.pytesseract.tesseract_cmd = r'C:\Users\91944\AppData\Local\Programs\Tesseract-OCR\tesseract.exe'
 POPPLER_PATH = r'C:\poppler-24.08.0\Library\bin'
@@ -26,7 +28,6 @@ SKILL_CATEGORIES = {
 }
 
 # --- HELPER FUNCTIONS ---
-
 def clean_text(text):
     if not text: return ""
     text = re.sub(r'\s+', ' ', text)
@@ -69,6 +70,21 @@ def extract_text(uploaded_file):
         return ""
     return clean_text(text)
 
+def extract_categorized_skills(text):
+    categorized_skills = {category: [] for category in SKILL_CATEGORIES}
+    all_skills_flat = [skill for skills in SKILL_CATEGORIES.values() for skill in skills]
+    skill_to_category_map = {skill: category for category, skills in SKILL_CATEGORIES.items() for skill in skills}
+    matcher = PhraseMatcher(nlp.vocab, attr='LOWER')
+    patterns = [nlp.make_doc(skill) for skill in all_skills_flat]
+    matcher.add("SKILL_MATCHER", patterns)
+    doc = nlp(text.lower())
+    matches = matcher(doc)
+    found_skills = set(span.text for _, start, end in matches for span in [doc[start:end]])
+    for skill in found_skills:
+        if category := skill_to_category_map.get(skill):
+            categorized_skills[category].append(skill)
+    return {cat: skills for cat, skills in categorized_skills.items() if skills}
+
 def grade_resume(text):
     feedback = {}
     score = 0
@@ -88,40 +104,18 @@ def grade_resume(text):
     else: score += 10; feedback['quantifiable_results'] = "Add quantifiable results to show impact."
     return min(score, 100), feedback
 
-# --- MAIN ANALYSIS FUNCTIONS ---
-
-def extract_categorized_skills(text):
-    categorized_skills = {category: [] for category in SKILL_CATEGORIES}
-    all_skills_flat = []
-    skill_to_category_map = {}
-    for category, skills in SKILL_CATEGORIES.items():
-        for skill in skills:
-            all_skills_flat.append(skill)
-            skill_to_category_map[skill] = category
-    matcher = PhraseMatcher(nlp.vocab, attr='LOWER')
-    patterns = [nlp.make_doc(skill) for skill in all_skills_flat]
-    matcher.add("SKILL_MATCHER", patterns)
-    doc = nlp(text.lower())
-    matches = matcher(doc)
-    found_skills = set(span.text for _, start, end in matches for span in [doc[start:end]])
-    for skill in found_skills:
-        category = skill_to_category_map.get(skill)
-        if category:
-            categorized_skills[category].append(skill)
-    return {cat: skills for cat, skills in categorized_skills.items() if skills}
-
-def perform_full_analysis(resume_text, job_role_model):
+# --- MAIN ANALYSIS FUNCTION ---
+def perform_full_analysis(resume_text, job_skills_text, full_jd_text):
     if not resume_text or not resume_text.strip():
-        return {"match_score": 0, "missing_skills": [], "matched_skills": [], "ai_suggestions": "Could not extract text.", "resume_grade": 0, "grading_feedback": {"error": "Text extraction failed."}, "categorized_analysis": {}}
+        return {"match_score": 0, "missing_skills": [], "matched_skills": [], "ai_suggestions": "Could not extract text from the resume.", "resume_grade": 0, "grading_feedback": {"error": "Text extraction failed."}, "categorized_analysis": {}}
+    if not job_skills_text or not job_skills_text.strip():
+        return {"match_score": 0, "missing_skills": [], "matched_skills": [], "ai_suggestions": "Job description was not provided.", "resume_grade": 0, "grading_feedback": {"error": "Missing job description."}, "categorized_analysis": {}}
     
-    job_description_text = job_role_model.required_skills
-    required_skills_by_cat = extract_categorized_skills(job_description_text)
+    required_skills_by_cat = extract_categorized_skills(job_skills_text)
     resume_skills_by_cat = extract_categorized_skills(resume_text)
-
     categorical_analysis = {}
     all_required_skills = set()
     all_matched_skills = set()
-
     for category, req_skills in required_skills_by_cat.items():
         req_set = set(req_skills)
         res_set = set(resume_skills_by_cat.get(category, []))
@@ -132,20 +126,14 @@ def perform_full_analysis(resume_text, job_role_model):
         score = (len(matched) / len(req_set)) * 100 if req_set else 0
         if req_set:
             categorical_analysis[category] = {"score": round(score), "matched": list(matched), "missing": list(missing)}
-
     overall_score = (len(all_matched_skills) / len(all_required_skills)) * 100 if all_required_skills else 0
-    all_missing_skills = all_required_skills.difference(all_matched_skills)
-    
-     # --- NEW: Replace template suggestions with LLM-generated suggestions ---
-    print("[INFO] Generating LLM-powered suggestions...")
-    suggestions = generate_llm_suggestions(resume_text, job_role_model.required_skills)
+    suggestions = generate_llm_suggestions(resume_text, full_jd_text)
     grade, grading_feedback = grade_resume(resume_text)
-
     return {
         "match_score": round(overall_score, 2),
-        "missing_skills": list(all_missing_skills),
+        "missing_skills": list(all_required_skills.difference(all_matched_skills)),
         "matched_skills": list(all_matched_skills),
-        "ai_suggestions": suggestions,#LLM response
+        "ai_suggestions": suggestions,
         "resume_grade": grade,
         "grading_feedback": grading_feedback,
         "categorized_analysis": categorical_analysis
