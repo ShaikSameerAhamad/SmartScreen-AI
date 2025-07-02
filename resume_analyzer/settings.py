@@ -137,5 +137,9 @@ MEDIA_ROOT = os.path.join(BASE_DIR, 'media')
 # ... (at the bottom of the file)
 LOGIN_URL = 'login'
 
-load_dotenv()
-# HUGGINGFACE_API_KEY = os.getenv("HUGGINGFACE_API_KEY")
+load_dotenv() #api
+
+STATICFILES_DIRS = [
+    os.path.join(BASE_DIR, 'static'),
+]
+STATIC_ROOT = os.path.join(BASE_DIR, 'staticfiles')

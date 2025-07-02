@@ -1,0 +1,53 @@
+:root {
+    --bs-primary-rgb: 71, 85, 105; /* Slate-600 */
+    --bs-secondary-rgb: 100, 116, 139; /* Slate-500 */
+}
+body {
+    font-family: 'Inter', sans-serif;
+    background-color: #f8fafc; /* Slate-50 */
+}
+.navbar {
+    background-color: #0f172a !important; /* Slate-900 */
+}
+.card {
+    border: none;
+    box-shadow: 0 4px 6px -1px rgb(0 0 0 / 0.05), 0 2px 4px -2px rgb(0 0 0 / 0.05);
+}
+.progress-bar {
+    background-color: #3b82f6; /* Blue-500 */
+}
+
+/*
+    Auth Page Styles
+    - For login, register pages
+*/
+
+.auth-card-container {
+    margin-top: 3rem;
+    max-width: 450px;
+}
+
+.auth-card-container .card {
+    border-radius: 0.75rem;
+    box-shadow: 0 10px 25px -5px rgb(0 0 0 / 0.1), 0 8px 10px -6px rgb(0 0 0 / 0.1);
+}
+
+.auth-card-container .form-control {
+    padding: 0.75rem 1rem;
+    border-radius: 0.5rem;
+}
+
+/*
+    Dashboard Page Styles
+*/
+
+.history-card {
+    border-left: 4px solid transparent;
+    transition: all 0.2s ease-in-out;
+}
+
+.history-card:hover {
+    transform: translateY(-3px);
+    border-left-color: var(--bs-primary); /* Uses the primary color we defined */
+    box-shadow: 0 10px 20px -5px rgb(0 0 0 / 0.08);
+}
