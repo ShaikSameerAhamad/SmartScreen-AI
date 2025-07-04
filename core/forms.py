@@ -10,17 +10,24 @@ import os
 class RegistrationForm(UserCreationForm):
     email = forms.EmailField(required=True)
 
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        self.fields['password1'].help_text = ''
+        self.fields['password2'].help_text = ''
+        self.fields['username'].help_text = ''
+
     class Meta:
         model = User
-        fields = ("username", "email")
+        fields = ("username", "email", "password1", "password2")
+
 
     def save(self, commit=True):
-        user = super(RegistrationForm, self).save(commit=False)
+        user = super().save(commit=False)
         user.email = self.cleaned_data["email"]
         if commit:
             user.save()
         return user
-
+    
 class ResumeUploadForm(forms.ModelForm):
     job_role = forms.ModelChoiceField(
         queryset=JobRole.objects.all(),

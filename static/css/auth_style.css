@@ -27,7 +27,9 @@ body {
 .auth-container {
   display: flex;
   width: 1100px;
-  height: 700px;
+  min-height: 600px;     /* 🔁 replaced fixed height */
+  height: auto;          /* ✅ fluid height */
+  align-items: stretch;
   border-radius: 24px;
   overflow: hidden;
   position: relative;
@@ -44,7 +46,8 @@ body {
 /* --- Right Panel (Glassmorphism) --- */
 .right-panel {
   position: relative;
-  overflow: hidden;
+  overflow-y: auto;          /* ✅ enables scroll if needed */
+  max-height: 100%;
   width: 45%;
   backdrop-filter: blur(20px);
   -webkit-backdrop-filter: blur(20px);
@@ -52,7 +55,7 @@ body {
   border: 1px solid rgba(255, 255, 255, 0.1);
   display: flex;
   flex-direction: column;
-  justify-content: center;
+  justify-content: flex-start; /* 🧠 previously was center */
   padding: 3rem 4rem;
   z-index: 2;
 }
@@ -87,7 +90,7 @@ body {
 /* --- Form Elements --- */
 h2 { font-size: 2.2rem; font-weight: 700; margin-bottom: 0.5rem; }
 .subtitle { font-size: 0.95rem; color: #cbd5e1; margin-bottom: 2rem; }
-.form-group { margin-bottom: 1.2rem; }
+.form-group { margin-bottom: 1.4rem; }
 .form-group label { display: block; margin-bottom: 0.4rem; }
 
 .form-input {
@@ -278,16 +281,10 @@ h2 { font-size: 2.2rem; font-weight: 700; margin-bottom: 0.5rem; }
 @media (max-width: 900px) {
   .auth-container { flex-direction: column; height: auto; }
   .left-panel, .right-panel { width: 100%; min-width: unset; min-height: unset; }
-  .right-panel { padding: 2.5rem; }
-  .left-panel {
-  height: auto;
-  display: grid;
-  grid-template-columns: repeat(2, 1fr);  /* 2 columns side by side */
-  gap: 1rem;  /* spacing between grid items */
-  padding: 1rem;
-  justify-items: center;
-  align-items: center;
-}
+  .right-panel { width: 100%; padding: 2.5rem; }
+   .left-panel {
+    display: none !important; /* ✅ Completely hide left panel */
+  }
 
 .grid-item {
   position: static !important;   /* remove absolute positioning */
@@ -306,4 +303,57 @@ h2 { font-size: 2.2rem; font-weight: 700; margin-bottom: 0.5rem; }
   .left-panel { height: 200px; }
   .right-panel { padding: 2rem 1.5rem; }
   .grid-item { font-size: 0.85rem; }
+}
+/*
+    =================================
+    Django Form Rendering Styles
+    =================================
+*/
+
+/* Style the paragraph tags Django wraps fields in */
+.right-panel form p {
+    margin-bottom: 1.5rem;
+}
+
+/* Style the labels for each field */
+.right-panel form p label {
+    display: block;
+    margin-bottom: 0.5rem;
+    font-size: 0.875rem;
+    color: #d1d5db;
+    font-weight: 500;
+}
+
+/* Style the input fields themselves */
+.right-panel form p input {
+    /* Re-use our existing form-input style */
+    width: 100%;
+    padding: 0.75rem 1rem;
+    background-color: #374151;
+    border: 1px solid #4b5563;
+    border-radius: 8px;
+    color: #f9fafb;
+    font-size: 1rem;
+    transition: border-color 0.2s, box-shadow 0.2s;
+}
+
+.right-panel form p input:focus {
+    outline: none;
+    border-color: #a78bfa;
+    box-shadow: 0 0 0 3px rgba(139, 92, 246, 0.3);
+}
+
+/* Style the help text and error lists */
+.right-panel form .helptext {
+    font-size: 0.8rem;
+    color: #9ca3af;
+    margin-top: 0.5rem;
+    padding-left: 0.25rem;
+}
+.right-panel form .errorlist {
+    list-style-type: none;
+    padding: 0;
+    margin-top: 0.5rem;
+    color: #f8d7da;
+    font-size: 0.9rem;
 }

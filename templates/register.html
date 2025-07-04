@@ -1,22 +1,78 @@
-{% extends 'base.html' %}
+{% extends 'base_auth.html' %}
+{% load widget_tweaks %}
 
-{% block content %}
-<div class="row justify-content-center">
-    <div class="col-md-6 auth-card-container">
-        <div class="card">
-            <div class="card-header bg-white border-0 py-3">
-                <h2 class="text-center">Register</h2>
-            </div>
-            <div class="card-body p-4">
-                <form method="post">
-                    {% csrf_token %}
-                    {{ form.as_p }}
-                    <div class="d-grid mt-4">
-                        <button type="submit" class="btn btn-primary btn-lg">Register</button>
-                    </div>
-                </form>
-            </div>
-        </div>
+{% block auth_content %}
+<main class="auth-container">
+
+  <!-- Left Panel -->
+  <section class="left-panel" id="leftPanel">
+    <div id="boxA" class="grid-item item-purple">Unlock Your Potential</div>
+    <div id="boxB" class="grid-item item-yellow">Actionable Feedback</div>
+    <div id="boxC" class="grid-item item-yellow">Skill Matching</div>
+    <div id="boxD" class="grid-item item-purple">AI-Powered Resume Analysis</div>
+  </section>
+
+  <!-- Right Panel -->
+  <section class="right-panel">
+    <h2>Create Account</h2>
+    <p class="subtitle">Join to start improving your resume today.</p>
+
+    <form method="post" novalidate>
+      {% csrf_token %}
+
+      <div class="form-group">
+        {{ form.username.label_tag }}
+        {{ form.username|add_class:"form-input" }}
+        {% if form.username.help_text %}
+          <small class="helptext">{{ form.username.help_text|safe }}</small>
+        {% endif %}
+        {% for error in form.username.errors %}
+          <p class="text-red-400 text-sm mt-1">{{ error }}</p>
+        {% endfor %}
+      </div>
+
+      <div class="form-group">
+        {{ form.email.label_tag }}
+        {{ form.email|add_class:"form-input" }}
+        {% for error in form.email.errors %}
+          <p class="text-red-400 text-sm mt-1">{{ error }}</p>
+        {% endfor %}
+      </div>
+
+      <div class="form-group">
+        {{ form.password1.label_tag }}
+        {{ form.password1|add_class:"form-input" }}
+        {% if form.password1.help_text %}
+          <small class="helptext">{{ form.password1.help_text|safe }}</small>
+        {% endif %}
+        {% for error in form.password1.errors %}
+          <p class="text-red-400 text-sm mt-1">{{ error }}</p>
+        {% endfor %}
+      </div>
+
+      <div class="form-group">
+        {{ form.password2.label_tag }}
+        {{ form.password2|add_class:"form-input" }}
+        {% if form.password2.help_text %}
+          <small class="helptext">{{ form.password2.help_text|safe }}</small>
+        {% endif %}
+        {% for error in form.password2.errors %}
+          <p class="text-red-400 text-sm mt-1">{{ error }}</p>
+        {% endfor %}
+      </div>
+
+      <button type="submit" class="btn-submit">Sign Up</button>
+
+      <button type="button" class="google-login mt-4">
+        <img src="https://www.gstatic.com/firebasejs/ui/2.0.0/images/auth/google.svg" alt="Google Logo" />
+        Continue with Google
+      </button>
+    </form>
+
+    <div class="bottom-link">
+      Already have an account? <a href="{% url 'login' %}">Sign In</a>
     </div>
-</div>
+  </section>
+
+</main>
 {% endblock %}
