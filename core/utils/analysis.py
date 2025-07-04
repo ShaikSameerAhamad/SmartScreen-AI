@@ -161,7 +161,13 @@ def perform_full_analysis(resume_text, job_skills_text, full_jd_text):
         all_matched_skills.update(matched)
         score = (len(matched) / len(req_set)) * 100 if req_set else 0
         if req_set:
-            categorical_analysis[category] = {"score": round(score), "matched": list(matched), "missing": list(missing)}
+            categorical_analysis[category] = {
+                "score": round(score),
+                "matched": list(matched),
+                "missing": list(missing),
+                "matched_count": len(matched), # <-- ADD THIS
+                "total_required": len(req_set)   # <-- ADD THIS
+            }  
     overall_score = (len(all_matched_skills) / len(all_required_skills)) * 100 if all_required_skills else 0
     suggestions = generate_llm_suggestions(resume_text, full_jd_text)
     grade, grading_feedback = grade_resume(resume_text)

@@ -132,6 +132,7 @@ def results_view(request, result_id):
         'learning_resources': learning_resources, # Pass new data to the template
     }
     return render(request, 'results.html', context)
+
 @login_required
 def download_pdf_view(request, result_id):
     try:

@@ -36,7 +36,128 @@ body {
     padding: 0.75rem 1rem;
     border-radius: 0.5rem;
 }
+/*
+    =================================
+    Authentication Page Styles (Login/Register)
+    =================================
+*/
 
+.auth-wrapper {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    min-height: 80vh;
+}
+
+.auth-card {
+    width: 100%;
+    max-width: 450px;
+    border-radius: 1rem;
+    box-shadow: 0 10px 25px -5px rgb(0 0 0 / 0.1), 0 8px 10px -6px rgb(0 0 0 / 0.1);
+    border: none;
+}
+
+.auth-card .card-header {
+    border-bottom: 0;
+    background-color: transparent;
+}
+
+.google-btn {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 0.75rem;
+    background-color: #fff;
+    color: #444;
+    border: 1px solid #ddd;
+    transition: background-color 0.2s ease-in-out;
+}
+
+.google-btn:hover {
+    background-color: #f8f9fa;
+    border-color: #ccc;
+}
+
+.separator {
+    display: flex;
+    align-items: center;
+    text-align: center;
+    color: #adb5bd;
+    margin: 1.5rem 0;
+}
+
+.separator::before,
+.separator::after {
+    content: '';
+    flex: 1;
+    border-bottom: 1px solid #dee2e6;
+}
+
+.separator:not(:empty)::before {
+    margin-right: .25em;
+}
+
+.separator:not(:empty)::after {
+    margin-left: .25em;
+}
+.auth-wrapper {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    min-height: 80vh;
+}
+
+.auth-card {
+    width: 100%;
+    max-width: 450px;
+    border-radius: 1rem;
+    box-shadow: 0 10px 25px -5px rgb(0 0 0 / 0.1), 0 8px 10px -6px rgb(0 0 0 / 0.1);
+    border: none;
+}
+
+.auth-card .card-header {
+    border-bottom: 0;
+    background-color: transparent;
+}
+
+.google-btn {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 0.75rem;
+    background-color: #fff;
+    color: #444;
+    border: 1px solid #ddd;
+    transition: background-color 0.2s ease-in-out;
+}
+
+.google-btn:hover {
+    background-color: #f8f9fa;
+    border-color: #ccc;
+}
+
+.separator {
+    display: flex;
+    align-items: center;
+    text-align: center;
+    color: #adb5bd;
+    margin: 1.5rem 0;
+}
+
+.separator::before,
+.separator::after {
+    content: '';
+    flex: 1;
+    border-bottom: 1px solid #dee2e6;
+}
+
+.separator:not(:empty)::before {
+    margin-right: .25em;
+}
+
+.separator:not(:empty)::after {
+    margin-left: .25em;
+}
 /*
     Dashboard Page Styles
 */

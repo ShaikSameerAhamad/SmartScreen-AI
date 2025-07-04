@@ -1,0 +1,309 @@
+*,
+*::before,
+*::after {
+  box-sizing: border-box;
+}
+body {
+  margin: 0;
+  font-family: 'SF Pro Display', 'Inter', sans-serif;
+  background: linear-gradient(240deg, #1f2937, #374151);
+  color: white;
+  height: 100vh;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  overflow: hidden;
+  position: relative;
+}
+
+.auth-wrapper {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 2rem;
+  position: relative;
+}
+
+.auth-container {
+  display: flex;
+  width: 1100px;
+  height: 700px;
+  border-radius: 24px;
+  overflow: hidden;
+  position: relative;
+  box-shadow: 0 25px 60px rgba(0, 0, 0, 0.5);
+}
+
+.left-panel {
+  position: relative;
+  width: 55%;
+  background: transparent;
+  overflow: hidden;
+}
+
+/* --- Right Panel (Glassmorphism) --- */
+.right-panel {
+  position: relative;
+  overflow: hidden;
+  width: 45%;
+  backdrop-filter: blur(20px);
+  -webkit-backdrop-filter: blur(20px);
+  background: rgba(30, 41, 59, 0.45);
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  padding: 3rem 4rem;
+  z-index: 2;
+}
+
+/* Corrected: Shine animation ONLY on the right panel's background */
+.right-panel::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: -150%;
+  width: 100%;
+  height: 100%;
+  background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.08), transparent);
+  transform: skewX(-25deg);
+  animation: sweepShine 8s infinite ease-in-out;
+  animation-delay: 2s;
+  z-index: 0; /* Ensures shine is behind content */
+}
+
+@keyframes sweepShine {
+  0% { left: -150%; }
+  50% { left: 150%; }
+  100% { left: -150%; }
+}
+
+/* Corrected: Clean rule to ensure all form elements are on top of the shine */
+.right-panel > * {
+  position: relative;
+  z-index: 1;
+}
+
+/* --- Form Elements --- */
+h2 { font-size: 2.2rem; font-weight: 700; margin-bottom: 0.5rem; }
+.subtitle { font-size: 0.95rem; color: #cbd5e1; margin-bottom: 2rem; }
+.form-group { margin-bottom: 1.2rem; }
+.form-group label { display: block; margin-bottom: 0.4rem; }
+
+.form-input {
+  width: 100%;
+  padding: 0.8rem;
+  border-radius: 10px;
+  background: rgba(0, 0, 0, 0.25);
+  border: 1px solid rgba(255,255,255,0.15);
+  color: white;
+  font-size: 1rem;
+  transition: border-color 0.3s ease, box-shadow 0.3s ease;
+}
+
+.form-input:focus {
+  border-color: #a78bfa;
+  box-shadow: 0 0 0 3px rgba(167, 139, 250, 0.3);
+  outline: none;
+}
+
+.form-errors {
+  background-color: rgba(220, 53, 69, 0.1);
+  border: 1px solid #dc3545;
+  border-radius: 8px;
+  color: #f8d7da;
+  padding: 0.75rem;
+  margin-bottom: 1rem;
+  text-align: center;
+  font-size: 0.9rem;
+}
+
+.btn-submit {
+  width: 100%;
+  padding: 0.8rem;
+  background: linear-gradient(to right, #7c3aed, #4f46e5);
+  border: none;
+  border-radius: 10px;
+  color: white;
+  font-weight: 600;
+  margin-top: 1rem;
+  cursor: pointer;
+  transition: transform 0.2s ease, box-shadow 0.2s ease;
+}
+
+.btn-submit:hover {
+  transform: scale(1.02);
+  box-shadow: 0 10px 20px rgba(124, 58, 237, 0.2);
+}
+
+.google-login {
+  width: 100%;
+  margin-top: 1rem;
+  background: rgba(255, 255, 255, 0.08);
+  color: white;
+  border: 1px solid rgba(255,255,255,0.2);
+  border-radius: 10px;
+  padding: 0.7rem;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.5rem;
+  cursor: pointer;
+  transition: background-color 0.2s ease;
+}
+
+.google-login:hover { background: rgba(255, 255, 255, 0.15); }
+.google-login img { width: 20px; height: 20px; }
+
+.bottom-link {
+  margin-top: 2rem;
+  text-align: center;
+  font-size: 0.875rem;
+  color: #cbd5e1;
+}
+
+.bottom-link a { color: #a78bfa; text-decoration: none; font-weight: 500; }
+
+/* --- Left Panel Tiles (Corrected: No Glassmorphism, No Shine) --- */
+.grid-item {
+  position: absolute;
+  width: 40.5%;
+  height: 25%;
+  padding: 1rem;
+  border-radius: 18px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-weight: 600;
+  text-align: center;
+  transition: top 0.9s ease, left 0.9s ease;
+  box-shadow: 0 10px 30px rgba(0,0,0,0.2);
+}
+
+#boxA, #boxB {
+  background-color: #6d28d9; /* Solid Purple */
+  color: white;
+}
+#boxC, #boxD {
+  background-color: #f59e0b; /* Solid Amber */
+  color: #111827;
+}
+
+/* --- Live Background Animation --- */
+.background-container {
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 100vw;
+  height: 100vh;
+  overflow: hidden;
+  z-index: 1;
+}
+
+.orb {
+  position: absolute;
+  border-radius: 50%;
+  filter: blur(120px);
+  opacity: 0.6;
+  animation: float 25s infinite alternate;
+}
+
+/* Corrected: Orb positioning to "peek" from corners */
+.orb1 {
+  width: 400px; height: 450px;
+  background: #7c3aed;
+  top: -250px; left: -250px;
+  animation-duration: 30s;
+}
+.orb2 {
+  width: 400px; height: 400px;
+  background: #ca8a04;
+  bottom: -200px; right: -200px;
+  animation-duration: 25s;
+  animation-delay: -5s;
+}
+
+@keyframes float {
+  from { transform: scale(1); }
+  to { transform: scale(1.3); }
+}
+
+/* Corrected: Multi-directional shooting stars */
+.shooting-star {
+  position: absolute;
+  width: 2px;
+  height: 2px;
+  background: #fff;
+  border-radius: 50%;
+  box-shadow: 0 0 7px #fff, 0 0 15px #fff;
+  animation-timing-function: linear;
+  animation-iteration-count: infinite;
+}
+.shooting-star::before {
+  content: '';
+  position: absolute;
+  top: 50%;
+  transform: translateY(-50%);
+  width: 250px;
+  height: 1px;
+  background: linear-gradient(90deg, #fff, transparent);
+}
+
+.star-1 { animation: anim-star-1 4s infinite; }
+.star-2 { animation: anim-star-2 5s infinite; animation-delay: 1.5s; }
+.star-3 { animation: anim-star-3 3s infinite; animation-delay: 3s; }
+.star-4 { animation: anim-star-4 4.5s infinite; animation-delay: 4.5s; }
+
+@keyframes anim-star-1 {
+  from { top: 0%; left: 50%; transform: rotate(-45deg); opacity: 1; }
+  to   { top: 100%; left: 0%; transform: rotate(-45deg); opacity: 0; }
+}
+@keyframes anim-star-2 {
+  from { top: 50%; left: 100%; transform: rotate(-135deg); opacity: 1; }
+  to   { top: 100%; left: 50%; transform: rotate(-135deg); opacity: 0; }
+}
+@keyframes anim-star-3 {
+  from { top: 100%; left: 50%; transform: rotate(135deg); opacity: 1; }
+  to   { top: 0%; left: 0%; transform: rotate(135deg); opacity: 0; }
+}
+@keyframes anim-star-4 {
+  from { top: 50%; left: 0%; transform: rotate(45deg); opacity: 1; }
+  to   { top: 0%; left: 50%; transform: rotate(45deg); opacity: 0; }
+}
+
+/* --- Media Queries (Unchanged) --- */
+@media (max-width: 1100px) {
+  .auth-container { width: 95vw; height: auto; }
+}
+@media (max-width: 900px) {
+  .auth-container { flex-direction: column; height: auto; }
+  .left-panel, .right-panel { width: 100%; min-width: unset; min-height: unset; }
+  .right-panel { padding: 2.5rem; }
+  .left-panel {
+  height: auto;
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);  /* 2 columns side by side */
+  gap: 1rem;  /* spacing between grid items */
+  padding: 1rem;
+  justify-items: center;
+  align-items: center;
+}
+
+.grid-item {
+  position: static !important;   /* remove absolute positioning */
+  width: 140px;
+  height: 140px;
+  transition: none;
+  #boxA, #boxB, #boxC, #boxD {
+    animation: none !important;
+  }
+}
+}
+@media (max-width: 600px) {
+  body { display: block; }
+  .auth-wrapper { padding: 0; }
+  .auth-container { width: 100vw; height: 100vh; border-radius: 0; box-shadow: none; }
+  .left-panel { height: 200px; }
+  .right-panel { padding: 2rem 1.5rem; }
+  .grid-item { font-size: 0.85rem; }
+}
