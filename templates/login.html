@@ -36,10 +36,10 @@
       </div>
       {% endif %}
       <button class="btn-submit" type="submit">Sign In</button>
-      <button class="google-login" type="button">
+      <a href="{% url 'social:begin' 'google-oauth2' %}" class="google-login">
         <img src="https://www.gstatic.com/firebasejs/ui/2.0.0/images/auth/google.svg" alt="Google Logo" />
         Continue with Google
-      </button>
+      </a>
     </form>
     <div class="bottom-link">Don't have an account? <a href="{% url 'register' %}">Sign Up</a></div>
   </section>

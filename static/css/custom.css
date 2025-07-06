@@ -158,17 +158,329 @@ body {
 .separator:not(:empty)::after {
     margin-left: .25em;
 }
-/*
-    Dashboard Page Styles
-*/
 
-.history-card {
-    border-left: 4px solid transparent;
-    transition: all 0.2s ease-in-out;
+/* === GLOBAL === */
+:root {
+  --bg-from: #0F172A;
+  --bg-to:   #1F2937;
+  --glass:   rgba(30, 41, 59, 0.45);
+  --border:  rgba(255, 255, 255, 0.1);
+  --purple:  #7C3AED;
+  --yellow:  #FACC15;
+  --text:    #F9FAFB;
+  --muted:   #9CA3AF;
+}
+body {
+  font-family: 'Inter', sans-serif;
+  background: linear-gradient(240deg, var(--bg-from), var(--bg-to));
+  color: var(--text);
+  margin: 0;
 }
 
+/* === CONTAINER === */
+.dashboard-container {
+  display: flex;
+  margin: 2rem auto;
+  max-width: 1200px;
+  border-radius: 20px;
+  overflow: hidden;
+  box-shadow: 0 25px 60px rgba(0, 0, 0, 0.45);
+  background: var(--glass);
+  backdrop-filter: blur(24px);
+}
+
+/* === LEFT PANEL === */
+.dashboard-left {
+  flex: 0 0 35%;
+  background: #111827;
+  padding: 2rem;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  align-items: center;
+}
+.spline-wrapper {
+  width: 100%;
+  max-width: 400px;         /* Can reduce from 440px to 400px */
+  height: 320px;
+  overflow: hidden;         /* Make sure anything overflowing is hidden */
+  border-radius: 12px;      /* Optional: give it soft corners */
+  position: relative;
+}
+
+.spline-wrapper iframe {
+  width: 100%;
+  height: 100%;
+  transform: scale(1.08);   /* Reduce from 1.15 to 1.08 */
+  transform-origin: center; /* Ensures it's centered while scaling */
+  border: none;
+}
+
+.welcome-title {
+  margin-top: 1.5rem;
+  font-size: 1.6rem;
+  font-weight: 700;
+  color: var(--text);
+}
+.welcome-sub {
+  margin-top: 0.5rem;
+  font-size: 0.95rem;
+  color: var(--muted);
+}
+
+/* === RIGHT PANEL === */
+.dashboard-right {
+  flex: 0 0 65%;
+  padding: 2.5rem;
+  background: var(--glass);
+  overflow-y: auto;
+}
+.section-heading {
+  font-size: 1.8rem;
+  font-weight: 700;
+  margin-bottom: 1.5rem;
+}
+.section-subheading {
+  font-size: 1.25rem;
+  margin: 2.5rem 0 1rem;
+  font-weight: 600;
+}
+.form-group {
+  margin-bottom: 1.4rem;
+  color: #9CA3AF;
+}
+.form-group label {
+  display: block;
+  font-weight: 500;
+  color: var(--muted);
+  margin-bottom: 0.4rem;
+}
+.form-group input,
+.form-group select,
+.form-group textarea {
+  width: 100%;
+  padding: 0.75rem 1rem;
+  background: rgba(255,255,255,0.05);
+  border: 1px solid rgba(255,255,255,0.15);
+  border-radius: 10px;
+  color: var(--text);
+  font-size: 1rem;
+  resize: vertical;
+}
+.form-group textarea {
+  background: rgba(30,41,59,0.65) !important;
+  color: #fff !important;
+  border: 1px solid #475569 !important;
+  font-size: 1rem;
+}
+.form-group textarea::placeholder {
+  color: #cbd5e1 !important;
+  opacity: 1;
+}
+.form-separator {
+  text-align: center;
+  margin: 1.5rem 0;
+  position: relative;
+}
+.form-separator::before,
+.form-separator::after {
+  content: '';
+  position: absolute;
+  top: 50%;
+  height: 1px;
+  width: 40%;
+  background: var(--border);
+}
+.form-separator::before { left: 0; }
+.form-separator::after { right: 0; }
+.form-separator span {
+  background: var(--glass);
+  padding: 0 1rem;
+  color: var(--muted);
+}
+
+/* === Unified Form Input === */
+input[type="file"],
+select,
+textarea,
+input[type="text"],
+input[type="email"],
+input[type="password"] {
+  width: 100%;
+  padding: 0.75rem 1rem;
+  background: rgba(255, 255, 255, 0.05);
+  border: 1px solid rgba(255, 255, 255, 0.15);
+  border-radius: 10px;
+  color: var(--text);
+  font-size: 1rem;
+  outline: none;
+  transition: border-color 0.2s ease-in-out, background 0.2s ease-in-out;
+}
+select:focus,
+textarea:focus,
+input:focus {
+  border-color: var(--purple);
+  background: rgba(255, 255, 255, 0.08);
+}
+select {
+  -webkit-appearance: none;
+  -moz-appearance: none;
+  appearance: none;
+  background-color: #f3f4f6;
+  color: #111827;
+  background-image: url("data:image/svg+xml;charset=US-ASCII,%3Csvg%20xmlns='http://www.w3.org/2000/svg'%20viewBox='0%200%204%205'%3E%3Cpath%20fill='%23ffffff'%20d='M2%200L0%202h4z'/%3E%3C/svg%3E");
+  background-repeat: no-repeat;
+  background-position: right 1rem center;
+  background-size: 0.65rem auto;
+  font-size: 1rem;
+  padding: 0.75rem 1rem;
+  border-radius: 10px;
+  box-shadow: 0 2px 8px rgba(0,0,0,0.04);
+  border: 1px solid #d1d5db;
+}
+select option {
+  color: #111827;
+  background-color: #fff;
+}
+select optgroup {
+  color: #111827;
+  background-color: #d8dee3;
+  font-weight: 600;
+  font-size: 0.95rem;
+}
+
+/* === Drop Zone === */
+.drop-zone {
+  border: 2px dashed rgba(255, 255, 255, 0.15);
+  background: rgba(255, 255, 255, 0.05);
+  padding: 1.25rem;
+  border-radius: 10px;
+  text-align: center;
+  cursor: pointer;
+  transition: background 0.2s ease-in-out, border-color 0.2s;
+  position: relative;
+  color: var(--text);
+}
+.drop-zone.dragover {
+  background: rgba(124, 58, 237, 0.1);
+  border-color: var(--purple);
+}
+.drop-zone input[type="file"] {
+  position: absolute;
+  opacity: 0;
+  height: 100%;
+  width: 100%;
+  left: 0;
+  top: 0;
+  cursor: pointer;
+}
+.drop-zone-label {
+  font-weight: 500;
+  margin-bottom: 0.5rem;
+  display: block;
+}
+.drop-text {
+  font-size: 1rem;
+  color: var(--muted);
+}
+
+.file-name-text {
+  display: block;
+  font-size: 0.95rem;
+  color: var(--muted);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  max-width: 100%;
+  margin-top: 0.5rem;
+}
+
+/* === BUTTONS === */
+.btn-submit {
+  width: 100%;
+  padding: 0.85rem;
+  font-weight: 600;
+  border: none;
+  border-radius: 10px;
+  background: linear-gradient(to right, var(--purple), #4F46E5);
+  color: white;
+  cursor: pointer;
+  transition: transform 0.2s, box-shadow 0.2s;
+}
+.btn-submit:hover {
+  transform: scale(1.03);
+  box-shadow: 0 0 20px rgba(124, 58, 237, 0.5);
+}
+.btn-small {
+  padding: 0.5rem 1rem;
+  background: var(--yellow);
+  color: #111827;
+  border-radius: 8px;
+  font-weight: 600;
+  text-decoration: none;
+  transition: background 0.2s;
+}
+.btn-small:hover {
+  background: #eab308;
+}
+
+/* === HISTORY === */
+.dashboard-history {}
+.history-card {
+  background: rgba(255,255,255,0.05);
+  border: 1px solid rgba(255,255,255,0.1);
+  border-radius: 12px;
+  padding: 1rem 1.5rem;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 1rem;
+  transition: transform 0.2s;
+}
 .history-card:hover {
-    transform: translateY(-3px);
-    border-left-color: var(--bs-primary); /* Uses the primary color we defined */
-    box-shadow: 0 10px 20px -5px rgb(0 0 0 / 0.08);
+  transform: translateY(-4px);
+}
+.history-date {
+  font-size: 0.85rem;
+  color: var(--muted);
+}
+.empty-state {
+  padding: 2rem;
+  text-align: center;
+  color: var(--muted);
+  border-radius: 12px;
+  background: rgba(255,255,255,0.05);
+  border: 1px solid var(--border);
+}
+.empty-state img {
+  width: 60px;
+  opacity: 0.8;
+  margin-bottom: 1rem;
+}
+
+/* === FORM ERRORS === */
+.form-errors {
+  background: rgba(255,0,0,0.08);
+  padding: 0.75rem;
+  color: #fecaca;
+  border-radius: 8px;
+  font-size: 0.9rem;
+  margin-bottom: 1rem;
+}
+
+/* === RESPONSIVE === */
+@media (max-width: 1024px) {
+  .dashboard-container {
+    flex-direction: column;
+    border-radius: 0;
+    box-shadow: none;
+  }
+  .dashboard-left,
+  .dashboard-right {
+    width: 100%;
+    padding: 2rem 1.5rem;
+  }
+  .spline-wrapper {
+    height: 250px;
+  }
 }

@@ -1,20 +1,28 @@
 # core/utils/analysis.py
+
 import re
 import os
+import io
 import spacy
 import pytesseract
+import docx
+import pdfplumber
+import textstat
+import language_tool_python
 from PIL import Image
 from spacy.matcher import PhraseMatcher
 from pdf2image import convert_from_bytes
-import io
-import docx
-import pdfplumber
+from sentence_transformers import SentenceTransformer, util
+from keybert import KeyBERT
 from .llm_handler import generate_llm_suggestions
 
 # --- Configuration ---
-pytesseract.pytesseract.tesseract_cmd = r'C:\Users\91944\AppData\Local\Programs\Tesseract-OCR\tesseract.exe'
-POPPLER_PATH = r'C:\poppler-24.08.0\Library\bin'
+pytesseract.pytesseract.tesseract_cmd = r'C:\\Users\\91944\\AppData\\Local\\Programs\\Tesseract-OCR\\tesseract.exe'
+POPPLER_PATH = r'C:\\poppler-24.08.0\\Library\\bin'
 nlp = spacy.load("en_core_web_lg")
+tool = language_tool_python.LanguageTool('en-US')
+kw_model = KeyBERT()
+bert_model = SentenceTransformer('all-MiniLM-L6-v2')
 
 # --- SKILLS ORGANIZED BY CATEGORY ---
 SKILL_CATEGORIES = {
@@ -44,22 +52,15 @@ def extract_text(uploaded_file):
     text = ""
     try:
         if extension == '.pdf':
-            print("[INFO] Attempting direct OCR on PDF using pdf2image")
-            # Make sure we pass actual bytes
             if not file_content.strip():
                 raise ValueError("Uploaded PDF file is empty!")
-            # Convert PDF to images (requires poppler)
-            images = convert_from_bytes(
-                file_content,
-                dpi=300,
-                poppler_path=r'C:\poppler-24.08.0\Library\bin'  # Update to match your actual path
-            )
+            images = convert_from_bytes(file_content, dpi=300, poppler_path=POPPLER_PATH)
             for img in images:
-                ocr_text = pytesseract.image_to_string(img)
-                text += ocr_text
+                text += pytesseract.image_to_string(img, config='--psm 6')
         elif extension == '.docx':
             doc = docx.Document(io.BytesIO(file_content))
-            for para in doc.paragraphs: text += para.text + "\n"
+            for para in doc.paragraphs:
+                text += para.text + "\n"
         elif extension == '.txt':
             text = file_content.decode('utf-8')
         elif extension in ['.jpg', '.jpeg', '.png', '.tiff']:
@@ -70,113 +71,141 @@ def extract_text(uploaded_file):
         return ""
     return clean_text(text)
 
-def extract_categorized_skills(text):
-    categorized_skills = {category: [] for category in SKILL_CATEGORIES}
-    all_skills_flat = [skill for skills in SKILL_CATEGORIES.values() for skill in skills]
-    skill_to_category_map = {skill: category for category, skills in SKILL_CATEGORIES.items() for skill in skills}
-    matcher = PhraseMatcher(nlp.vocab, attr='LOWER')
-    patterns = [nlp.make_doc(skill) for skill in all_skills_flat]
-    matcher.add("SKILL_MATCHER", patterns)
-    doc = nlp(text.lower())
+def extract_keywords(text):
+    keywords = kw_model.extract_keywords(text, top_n=20)
+    return [kw for kw, _ in keywords]
+
+def semantic_match(required_skills, resume_text):
+    matched, missing = [], []
+
+    if not required_skills or not resume_text:
+        return matched, required_skills
+
+    resume_lower = resume_text.lower()
+
+    matcher = PhraseMatcher(nlp.vocab, attr="LOWER")
+    patterns = [nlp.make_doc(skill) for skill in required_skills]
+    matcher.add("SkillMatch", patterns)
+    doc = nlp(resume_lower)
     matches = matcher(doc)
-    found_skills = set(span.text for _, start, end in matches for span in [doc[start:end]])
-    for skill in found_skills:
-        if category := skill_to_category_map.get(skill):
-            categorized_skills[category].append(skill)
-    return {cat: skills for cat, skills in categorized_skills.items() if skills}
+
+    # ✅ FIXED: Safely extract matched text
+    matched_spacy = {doc[start:end].text.lower() for _, start, end in matches}
+
+    remaining_skills = [s for s in required_skills if s.lower() not in matched_spacy]
+
+    # Semantic similarity using BERT
+    matched_bert = []
+    if remaining_skills:
+        skill_embeddings = bert_model.encode(remaining_skills, convert_to_tensor=True)
+        resume_embedding = bert_model.encode(resume_text, convert_to_tensor=True)
+        similarities = util.cos_sim(resume_embedding, skill_embeddings)[0]
+
+        for i, score in enumerate(similarities):
+            if score >= 0.6:
+                matched_bert.append(remaining_skills[i].lower())
+
+    # Combine and deduplicate
+    matched = list(set(matched_bert).union(matched_spacy))
+    missing = [s for s in required_skills if s.lower() not in matched]
+
+    return matched, missing
+
+
+def extract_section(title, text):
+    pattern = rf"{title}.*?(?=\n[A-Z])"
+    match = re.search(pattern, text, re.DOTALL | re.IGNORECASE)
+    return match.group() if match else ""
+
+def categorize_skills(matched_skills):
+    categorized = {cat: [] for cat in SKILL_CATEGORIES}
+    for skill in matched_skills:
+        for category, skill_list in SKILL_CATEGORIES.items():
+            if skill.lower() in skill_list:
+                categorized[category].append(skill)
+    return {k: v for k, v in categorized.items() if v}
 
 def grade_resume(text):
-    """
-    Grades a resume based on a more advanced set of rules, including
-    a wider range of action verbs and quantifiable metrics.
-    """
     feedback = {}
     score = 0
     word_count = len(text.split())
     text_lower = text.lower()
 
-    # Rule 1: Resume Length (unchanged)
     if word_count < 200: score += 5; feedback['length'] = f"Resume is very brief ({word_count} words). Consider expanding."
     elif 400 <= word_count <= 800: score += 25; feedback['length'] = f"Good length ({word_count} words)."
     else: score += 15; feedback['length'] = f"Consider adjusting length ({word_count} words)."
 
-    # Rule 2: Presence of Important Sections (unchanged)
+    grammar_issues = len(tool.check(text))
+    readability = textstat.flesch_reading_ease(text)
+    feedback['grammar'] = f"{grammar_issues} grammar issues found."
+    feedback['readability'] = f"Readability score is {readability:.2f}."
+
+    if re.search(r"references available", text_lower):
+        feedback['red_flag'] = "Avoid generic phrases like 'References available upon request'."
+
     sections_found = [s for s in ['experience', 'skills', 'education', 'projects'] if re.search(r'\b' + s + r'\b', text_lower)]
     if len(sections_found) >= 2: score += 25
     feedback['sections'] = f"Found {len(sections_found)} key sections."
 
-    # Rule 3: Use of Action Verbs (ENHANCED)
-    strong_action_verbs = [
-        'achieved', 'accelerated', 'accomplished', 'architected', 'automated', 'built', 'conceived',
-        'created', 'designed', 'developed', 'directed', 'engineered', 'founded', 'generated',
-        'implemented', 'improved', 'increased', 'initiated', 'innovated', 'instituted', 'launched',
-        'led', 'managed', 'negotiated', 'optimized', 'overhauled', 'pioneered', 'produced',
-        'reduced', 're-engineered', 'resolved', 'revamped', 'spearheaded', 'streamlined', 'strengthened'
-    ]
-    verb_count = sum(1 for verb in strong_action_verbs if re.search(r'\b' + verb + r'\b', text_lower))
-    if verb_count >= 5:
-        score += 25
-        feedback['action_verbs'] = f"Excellent! Found {verb_count} strong action verbs."
-    elif verb_count >= 2:
-        score += 15
-        feedback['action_verbs'] = f"Good start with {verb_count} action verbs. Try to add more to describe your impact."
-    else:
-        score += 5
-        feedback['action_verbs'] = "Weak use of action verbs. Use verbs like 'developed', 'managed', 'optimized' to show initiative."
+    strong_verbs = ['developed', 'managed', 'optimized', 'created', 'built', 'implemented', 'achieved', 'led', 'launched']
+    verb_count = sum(1 for verb in strong_verbs if re.search(r'\b' + verb + r'\b', text_lower))
+    score += min(verb_count, 5) * 5
+    feedback['action_verbs'] = f"{verb_count} strong action verbs used."
 
-    # Rule 4: Use of Quantifiable Results (ENHANCED)
-    # This regex looks for percentages, dollar amounts, 'x' multipliers (like 10x), and numbers followed by keywords.
-    metric_patterns = r'(\d+%|\d+\s*percent|\$\d+|\d+x\b|\d+\s*(?:users|customers|clients|projects|team members|requests|downloads|sales))'
-    quantifiable_count = len(re.findall(metric_patterns, text_lower))
-    if quantifiable_count >= 2:
-        score += 25
-        feedback['quantifiable_metrics'] = f"Excellent! Found {quantifiable_count} quantifiable metrics that demonstrate your impact."
-    elif quantifiable_count == 1:
-        score += 15
-        feedback['quantifiable_metrics'] = "Good start! You have one quantifiable metric. Adding more will strengthen your resume."
-    else:
-        score += 5
-        feedback['quantifiable_metrics'] = "Add quantifiable results to show impact (e.g., 'increased efficiency by 20%' or 'managed a team of 5')."
+    metrics = re.findall(r'(\d+%|\$\d+|\d+x|\d+\s+(?:users|clients|projects|downloads|sales))', text_lower)
+    score += min(len(metrics), 3) * 5
+    feedback['metrics'] = f"{len(metrics)} quantifiable metrics found."
 
     return min(score, 100), feedback
 
-# --- MAIN ANALYSIS FUNCTION ---
 def perform_full_analysis(resume_text, job_skills_text, full_jd_text):
-    if not resume_text or not resume_text.strip():
-        return {"match_score": 0, "missing_skills": [], "matched_skills": [], "ai_suggestions": "Could not extract text from the resume.", "resume_grade": 0, "grading_feedback": {"error": "Text extraction failed."}, "categorized_analysis": {}}
-    if not job_skills_text or not job_skills_text.strip():
-        return {"match_score": 0, "missing_skills": [], "matched_skills": [], "ai_suggestions": "Job description was not provided.", "resume_grade": 0, "grading_feedback": {"error": "Missing job description."}, "categorized_analysis": {}}
-    
-    required_skills_by_cat = extract_categorized_skills(job_skills_text)
-    resume_skills_by_cat = extract_categorized_skills(resume_text)
-    categorical_analysis = {}
-    all_required_skills = set()
-    all_matched_skills = set()
-    for category, req_skills in required_skills_by_cat.items():
-        req_set = set(req_skills)
-        res_set = set(resume_skills_by_cat.get(category, []))
-        matched = req_set.intersection(res_set)
-        missing = req_set.difference(res_set)
-        all_required_skills.update(req_set)
-        all_matched_skills.update(matched)
-        score = (len(matched) / len(req_set)) * 100 if req_set else 0
-        if req_set:
-            categorical_analysis[category] = {
-                "score": round(score),
-                "matched": list(matched),
-                "missing": list(missing),
-                "matched_count": len(matched), # <-- ADD THIS
-                "total_required": len(req_set)   # <-- ADD THIS
-            }  
-    overall_score = (len(all_matched_skills) / len(all_required_skills)) * 100 if all_required_skills else 0
+    if not resume_text or not job_skills_text:
+        return {
+            "match_score": 0,
+            "missing_skills": [],
+            "matched_skills": [],
+            "ai_suggestions": "Missing input.",
+            "resume_grade": 0,
+            "grading_feedback": {"error": "Invalid input."},
+            "final_score": 0,
+            "categorized_analysis": {}
+        }
+
+    jd_keywords = extract_keywords(job_skills_text)
+    matched_skills, missing_skills = semantic_match(jd_keywords, resume_text)
     suggestions = generate_llm_suggestions(resume_text, full_jd_text)
-    grade, grading_feedback = grade_resume(resume_text)
+    grade, feedback = grade_resume(resume_text)
+    match_score = round(len(matched_skills) / len(jd_keywords) * 100, 2) if jd_keywords else 0
+    final_score = round((0.6 * match_score) + (0.4 * grade), 2)
+
+    # ✅ New logic for categorizing skills
+    categorized = {}
+    matched_set = set(s.lower() for s in matched_skills)
+    missing_set = set(s.lower() for s in missing_skills)
+
+    for category, skill_list in SKILL_CATEGORIES.items():
+        matched = [skill for skill in skill_list if skill.lower() in matched_set]
+        missing = [skill for skill in skill_list if skill.lower() in missing_set]
+        total_required = len(skill_list)
+        matched_count = len(matched)
+        score = round((matched_count / total_required) * 100, 2) if total_required else 0
+       
+        if matched or missing:
+            categorized[category] = {
+                "matched": matched,
+                "missing": missing,
+                "matched_count": matched_count,
+                "total_required": total_required,
+                "score": score
+            }
+
     return {
-        "match_score": round(overall_score, 2),
-        "missing_skills": list(all_required_skills.difference(all_matched_skills)),
-        "matched_skills": list(all_matched_skills),
+        "match_score": match_score,
+        "missing_skills": missing_skills,
+        "matched_skills": matched_skills,
         "ai_suggestions": suggestions,
         "resume_grade": grade,
-        "grading_feedback": grading_feedback,
-        "categorized_analysis": categorical_analysis
+        "grading_feedback": feedback,
+        "final_score": final_score,
+        "categorized_analysis": categorized  # ✅ Now included
     }

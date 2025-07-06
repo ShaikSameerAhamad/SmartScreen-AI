@@ -8,32 +8,38 @@ API_URL = f"https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-f
 headers = {"Content-Type": "application/json"}
 
 def generate_llm_suggestions(resume_text, job_description_text):
-    # --- THIS IS THE UPDATED PROMPT ---
+    if len(resume_text.strip()) < 100 or len(job_description_text.strip()) < 100:
+        return "Insufficient content for AI suggestions. Please upload a more detailed resume or job description."
+
+    # Build prompt with system-style instruction
     prompt = f"""
-    As an expert career coach, your task is to provide a concise, actionable critique of a resume based on a specific job description.
+You are an expert career coach and ATS resume analyst. Given a job description and a user's resume, your task is to identify:
 
-    **Job Description:**
-    ---
-    {job_description_text}
-    ---
+1. Gaps in required skills or experiences.
+2. Areas to improve clarity, action verbs, or measurable outcomes.
+3. Suggestions to better align the resume with ATS keyword expectations.
+4. Tone, format, or style inconsistencies if any.
+5. Add any missing project examples, quantified achievements, or modern tools/frameworks.
 
-    **User's Resume Text:**
-    ---
-    {resume_text}
-    ---
+Return your suggestions as 3 to 6 clear, numbered bullet points. Use **bold** headings for each point. Keep it highly actionable and practical.
 
-    **Your Task:**
-    Format your entire response as a list of 3-5 important bullet points. Each bullet point must be a specific, actionable recommendation for how the user can improve their resume to better match this job. Start each point with a clear heading in bold.
-    """
+---
 
-    # Payload structure for Gemini API
+**Job Description:**
+{job_description_text}
+
+---
+
+**Resume:**
+{resume_text}
+"""
+
     payload = {
-        "contents": [{
-            "parts": [{
-                "text": prompt
-            }]
-        }],
-        # Add safety settings to reduce the chance of the response being blocked
+        "contents": [
+            {
+                "parts": [{"text": prompt}]
+            }
+        ],
         "safetySettings": [
             {"category": "HARM_CATEGORY_HARASSMENT", "threshold": "BLOCK_NONE"},
             {"category": "HARM_CATEGORY_HATE_SPEECH", "threshold": "BLOCK_NONE"},
@@ -44,33 +50,21 @@ def generate_llm_suggestions(resume_text, job_description_text):
 
     try:
         response = requests.post(API_URL, headers=headers, json=payload)
-        
         if response.status_code != 200:
-            error_message = f"API request failed with status code {response.status_code}. Response: {response.text}"
-            print(f"LLM API Error: {error_message}")
-            return f"Could not generate AI suggestions due to an API error. (Status: {response.status_code})"
+            return f"Could not generate suggestions (HTTP {response.status_code})"
 
         output = response.json()
-        
-        # Check for candidates and parts before accessing them
         if 'candidates' in output and output['candidates']:
             content = output['candidates'][0].get('content', {})
             if 'parts' in content and content['parts']:
-                return content['parts'][0].get('text', 'The model returned an empty suggestion.').strip()
-        
-        # Handle cases where the response might be blocked for safety reasons
-        if 'promptFeedback' in output and output['promptFeedback'].get('blockReason'):
-            reason = output['promptFeedback']['blockReason']
-            print(f"LLM content blocked. Reason: {reason}")
-            return "Could not generate AI suggestions because the prompt was blocked for safety reasons. Please try rephrasing the job description."
-        
-        print(f"LLM API Error: Unexpected response format: {output}")
-        return "Could not parse the model's response."
+                return content['parts'][0].get('text', 'The model returned no suggestions.').strip()
 
+        if 'promptFeedback' in output and output['promptFeedback'].get('blockReason'):
+            return "Prompt blocked by safety filters. Try using a different job/resume input."
+
+        return "The model returned an empty response."
 
     except requests.exceptions.RequestException as e:
-        print(f"An exception occurred while querying the LLM: {e}")
-        return "An error occurred while connecting to the AI suggestion service."
+        return "Network error while calling AI suggestion service."
     except Exception as e:
-        print(f"An unexpected error occurred: {e}")
-        return "An unexpected error occurred while generating suggestions."
+        return "Unexpected error during suggestion generation."

@@ -141,6 +141,7 @@ h2 { font-size: 2.2rem; font-weight: 700; margin-bottom: 0.5rem; }
 
 .google-login {
   width: 100%;
+  text-decoration: none;
   margin-top: 1rem;
   background: rgba(255, 255, 255, 0.08);
   color: white;
@@ -356,4 +357,7 @@ h2 { font-size: 2.2rem; font-weight: 700; margin-bottom: 0.5rem; }
     margin-top: 0.5rem;
     color: #f8d7da;
     font-size: 0.9rem;
+}
+a{
+  text-decoration: none;
 }

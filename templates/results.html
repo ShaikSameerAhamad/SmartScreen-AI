@@ -6,81 +6,84 @@
 <div class="container py-4">
     <div class="d-flex justify-content-between align-items-center mb-4">
         <h2 class="mb-0">Analysis for: <span class="fw-light">{{ result.get_job_title }}</span></h2>
-        <div>
-            <a href="{% url 'download_pdf' result.id %}" class="btn btn-outline-secondary btn-sm">
-                <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="currentColor" class="bi bi-download me-1" viewBox="0 0 16 16">
-                    <path d="M.5 9.9a.5.5 0 0 1 .5.5v2.5a1 1 0 0 0 1 1h12a1 1 0 0 0 1-1v-2.5a.5.5 0 0 1 1 0v2.5a2 2 0 0 1-2 2H2a2 2 0 0 1-2-2v-2.5a.5.5 0 0 1 .5-.5z"/>
-                    <path d="M7.646 11.854a.5.5 0 0 0 .708 0l3-3a.5.5 0 0 0-.708-.708L8.5 10.293V1.5a.5.5 0 0 0-1 0v8.793L5.354 8.146a.5.5 0 1 0-.708.708l3 3z"/>
-                </svg>
-                Download Report
-            </a>
-        </div>
+        <a href="{% url 'download_pdf' result.id %}" class="btn btn-outline-primary btn-sm">
+            <i class="bi bi-download me-1"></i> Download Report
+        </a>
     </div>
-    
+
     <div class="row g-4">
+        <!-- LEFT SECTION -->
         <div class="col-lg-8">
-            <div class="card">
+            <div class="card mb-4">
                 <div class="card-header bg-white border-bottom-0">
-                    <ul class="nav nav-tabs card-header-tabs" id="myTab" role="tablist">
-                        <li class="nav-item" role="presentation">
-                            <button class="nav-link active" id="suggestions-tab" data-bs-toggle="tab" data-bs-target="#suggestions" type="button" role="tab">AI Suggestions</button>
+                    <ul class="nav nav-tabs card-header-tabs" id="analysisTabs" role="tablist">
+                        <li class="nav-item">
+                            <button class="nav-link active" id="suggestions-tab" data-bs-toggle="tab" data-bs-target="#suggestions" type="button" role="tab">
+                                AI Suggestions
+                            </button>
                         </li>
-                        <li class="nav-item" role="presentation">
-                            <button class="nav-link" id="breakdown-tab" data-bs-toggle="tab" data-bs-target="#breakdown" type="button" role="tab">Skill Breakdown</button>
+                        <li class="nav-item">
+                            <button class="nav-link" id="skills-tab" data-bs-toggle="tab" data-bs-target="#skills" type="button" role="tab">
+                                Skill Breakdown
+                            </button>
                         </li>
                     </ul>
                 </div>
+
                 <div class="card-body">
-                    <div class="tab-content" id="myTabContent">
-                        <div class="tab-pane fade show active p-2" id="suggestions" role="tabpanel">
-                            <h5 class="card-title mb-3">Personalized Recommendations</h5>
-                            <div class="card-text lh-lg">{{ result.ai_suggestions|markdown|safe }}</div>
+                    <div class="tab-content" id="analysisTabsContent">
+                        <!-- AI SUGGESTIONS -->
+                        <div class="tab-pane fade show active" id="suggestions" role="tabpanel">
+                            <h5 class="mb-3">Personalized Resume Recommendations</h5>
+                            <div class="markdown-body">{{ result.ai_suggestions|markdown|safe }}</div>
                         </div>
-                        
-                        <div class="tab-pane fade p-2" id="breakdown" role="tabpanel">
-                            <h5 class="card-title mb-3">Categorical Skill Analysis</h5>
+
+                        <!-- SKILL BREAKDOWN -->
+                        <div class="tab-pane fade" id="skills" role="tabpanel">
+                            <h5 class="mb-3">Categorical Skill Match</h5>
                             {% for category, data in result.categorized_analysis.items %}
                                 <div class="mb-4">
-                                    <!-- <strong>{{ category }}</strong> -->
                                     <div class="d-flex justify-content-between">
                                         <strong>{{ category }}</strong>
-                                        <span class="text-muted">Matched {{ data.matched_count }} of {{ data.total_required }}</span>
+                                        <span class="text-muted">Matched {{ data.matched_count }} / {{ data.total_required }}</span>
                                     </div>
                                     <div class="progress mt-1" style="height: 8px;" title="{{ data.score }}%">
                                         <div class="progress-bar" role="progressbar" style="width: {{ data.score }}%;" aria-valuenow="{{ data.score }}"></div>
                                     </div>
 
+                                    {% if data.missing %}
                                     <div class="accordion accordion-flush mt-2" id="accordion-{{ forloop.counter }}">
                                         {% for skill in data.missing %}
-                                        <div class="accordion-item">
-                                            <h2 class="accordion-header" id="heading-missing-{{ forloop.parentloop.counter }}-{{ forloop.counter }}">
-                                                <button class="accordion-button collapsed p-2" type="button" data-bs-toggle="collapse" data-bs-target="#collapse-missing-{{ forloop.parentloop.counter }}-{{ forloop.counter }}">
-                                                    <span class="badge rounded-pill text-bg-danger me-2">❌ Missing</span> {{ skill|capfirst }}
-                                                </button>
-                                            </h2>
-                                            <div id="collapse-missing-{{ forloop.parentloop.counter }}-{{ forloop.counter }}" class="accordion-collapse collapse" data-bs-parent="#accordion-{{ forloop.parentloop.counter }}">
-                                                <div class="accordion-body">
-                                                    {% with resource=learning_resources|get_item:skill %}
-                                                        {% if resource %}
-                                                            <p><strong>What is {{ skill|capfirst }}?</strong><br>{{ resource.definition }}</p>
-                                                            <p><strong>Example for your resume:</strong><br><code class="d-block p-2 bg-light">{{ resource.resume_bullet_template }}</code></p>
-                                                            <strong>Learn More:</strong>
-                                                            <ul class="list-unstyled mt-1">
-                                                                {% if resource.youtube_link %}<li><a href="{{ resource.youtube_link }}" target="_blank">📺 Watch on YouTube</a></li>{% endif %}
-                                                                {% if resource.course_link %}<li><a href="{{ resource.course_link }}" target="_blank">🎓 Take a Course</a></li>{% endif %}
-                                                            </ul>
-                                                        {% else %}
-                                                            <p class="text-muted small">No learning resources available for this skill yet.</p>
-                                                        {% endif %}
-                                                    {% endwith %}
+                                            <div class="accordion-item">
+                                                <h2 class="accordion-header" id="heading-{{ forloop.parentloop.counter }}-{{ forloop.counter }}">
+                                                    <button class="accordion-button collapsed p-2" type="button" data-bs-toggle="collapse" data-bs-target="#collapse-{{ forloop.parentloop.counter }}-{{ forloop.counter }}">
+                                                        <span class="badge bg-danger me-2">❌ Missing</span> {{ skill|capfirst }}
+                                                    </button>
+                                                </h2>
+                                                <div id="collapse-{{ forloop.parentloop.counter }}-{{ forloop.counter }}" class="accordion-collapse collapse">
+                                                    <div class="accordion-body">
+                                                        {% with resource=learning_resources|get_item:skill %}
+                                                            {% if resource %}
+                                                                <p><strong>What is {{ skill|capfirst }}?</strong><br>{{ resource.definition }}</p>
+                                                                <p><strong>Resume Example:</strong><br><code>{{ resource.resume_bullet_template }}</code></p>
+                                                                <strong>Learn:</strong>
+                                                                <ul class="list-unstyled">
+                                                                    {% if resource.youtube_link %}<li>📺 <a href="{{ resource.youtube_link }}" target="_blank">Watch on YouTube</a></li>{% endif %}
+                                                                    {% if resource.course_link %}<li>🎓 <a href="{{ resource.course_link }}" target="_blank">Take a Course</a></li>{% endif %}
+                                                                </ul>
+                                                            {% else %}
+                                                                <p class="text-muted small">No resources available for this skill yet.</p>
+                                                            {% endif %}
+                                                        {% endwith %}
+                                                    </div>
                                                 </div>
                                             </div>
-                                        </div>
                                         {% endfor %}
                                     </div>
-                                    </div>
+                                    {% endif %}
+                                </div>
                             {% empty %}
-                                <p>No specific skill categories were found in the job description.</p>
+                                <p>No categorized skills were detected in the job description.</p>
                             {% endfor %}
                         </div>
                     </div>
@@ -88,7 +91,9 @@
             </div>
         </div>
 
+        <!-- RIGHT SECTION -->
         <div class="col-lg-4">
+            <!-- MATCH SCORE -->
             <div class="card text-center mb-4">
                 <div class="card-header bg-white"><h6 class="mb-0">Overall Skill Match</h6></div>
                 <div class="card-body">
@@ -96,11 +101,12 @@
                 </div>
             </div>
 
+            <!-- IMPROVEMENT SCORE -->
             {% if result.improvement_score is not None %}
-            <div class="card mb-4">
-                <div class="card-header text-center bg-white"><h6 class="mb-0">Resume Skill Improvement</h6></div>
-                <div class="card-body d-flex justify-content-center align-items-center" style="min-height: 230px;">
-                    <div style="position: relative; width: 100%; max-width: 220px; height: 110px;">
+            <div class="card text-center mb-4">
+                <div class="card-header bg-white"><h6 class="mb-0">Resume Skill Improvement</h6></div>
+                <div class="card-body">
+                    <div style="position: relative; width: 100%; max-width: 220px; height: 110px; margin: auto;">
                         <canvas id="gaugeChart" data-score="{{ result.improvement_score }}"></canvas>
                         <div id="gaugeValue" style="position: absolute; bottom: -10px; width: 100%; text-align: center; font-size: 1.25rem; font-weight: 600;"></div>
                     </div>
@@ -108,9 +114,10 @@
             </div>
             {% endif %}
 
+            <!-- RESUME GRADE -->
             <div class="card">
-                <div class="card-header text-center bg-white"><h6 class="mb-0">Overall Resume Grade</h6></div>
-                <div class="card-body">
+                <div class="card-header text-center bg-white"><h6 class="mb-0">Resume Grade</h6></div>
+                <div class="card-body text-center">
                     <h1 class="display-5 fw-bold text-success">{{ result.resume_grade }}/100</h1>
                     <ul class="list-group list-group-flush mt-3 text-start small">
                         {% for key, value in result.grading_feedback.items %}
@@ -121,10 +128,10 @@
             </div>
         </div>
     </div>
-    <a href="{% url 'dashboard' %}" class="btn btn-secondary mt-4">Back to Dashboard</a>
+    <a href="{% url 'dashboard' %}" class="btn btn-secondary mt-4">← Back to Dashboard</a>
 </div>
 {% endblock %}
 
 {% block scripts %}
-    <script src="{% static 'js/results-chart.js' %}"></script>
+<script src="{% static 'js/results-chart.js' %}"></script>
 {% endblock %}
