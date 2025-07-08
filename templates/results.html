@@ -10,7 +10,7 @@
             <i class="bi bi-download me-1"></i> Download Report
         </a>
     </div>
-
+    <!-- TWO PANEL LAYOUT START -->
     <div class="row g-4">
         <!-- LEFT SECTION -->
         <div class="col-lg-8">
@@ -27,9 +27,13 @@
                                 Skill Breakdown
                             </button>
                         </li>
+                        <li class="nav-item">
+                            <button class="nav-link" id="interview-tab" data-bs-toggle="tab" data-bs-target="#interview" type="button" role="tab">
+                                Interview Questions
+                            </button>
+                        </li>
                     </ul>
                 </div>
-
                 <div class="card-body">
                     <div class="tab-content" id="analysisTabsContent">
                         <!-- AI SUGGESTIONS -->
@@ -40,16 +44,38 @@
 
                         <!-- SKILL BREAKDOWN -->
                         <div class="tab-pane fade" id="skills" role="tabpanel">
-                            <h5 class="mb-3">Categorical Skill Match</h5>
+                            <h5 class="mb-3">Deep Skill Breakdown by Category</h5>
                             {% for category, data in result.categorized_analysis.items %}
+                                {% if data.missing or data.matched %}
                                 <div class="mb-4">
-                                    <div class="d-flex justify-content-between">
+                                    <div class="d-flex justify-content-between align-items-center mb-1">
                                         <strong>{{ category }}</strong>
-                                        <span class="text-muted">Matched {{ data.matched_count }} / {{ data.total_required }}</span>
+                                        <span class="text-muted small">Matched {{ data.matched_count }} / {{ data.total_required }}</span>
                                     </div>
-                                    <div class="progress mt-1" style="height: 8px;" title="{{ data.score }}%">
-                                        <div class="progress-bar" role="progressbar" style="width: {{ data.score }}%;" aria-valuenow="{{ data.score }}"></div>
+                                    <div class="progress mb-2" style="height: 10px;">
+                                        <div class="progress-bar 
+                                            {% if data.score >= 80 %} bg-success 
+                                            {% elif data.score >= 50 %} bg-warning 
+                                            {% else %} bg-danger 
+                                            {% endif %}" 
+                                            role="progressbar" 
+                                            style="width: {{ data.score }}%;" 
+                                            aria-valuenow="{{ data.score }}" 
+                                            aria-valuemin="0" 
+                                            aria-valuemax="100">
+                                        </div>
                                     </div>
+
+                                    {% if data.matched %}
+                                    <div class="mb-2">
+                                        <span class="text-success small">✅ Matched:</span>
+                                        <div class="d-flex flex-wrap gap-2 mt-1">
+                                            {% for skill in data.matched %}
+                                                <span class="badge bg-success-subtle text-success border border-success">{{ skill }}</span>
+                                            {% endfor %}
+                                        </div>
+                                    </div>
+                                    {% endif %}
 
                                     {% if data.missing %}
                                     <div class="accordion accordion-flush mt-2" id="accordion-{{ forloop.counter }}">
@@ -82,9 +108,26 @@
                                     </div>
                                     {% endif %}
                                 </div>
+                                {% endif %}
                             {% empty %}
-                                <p>No categorized skills were detected in the job description.</p>
+                                <p class="text-muted">No skill categories were detected for this role.</p>
                             {% endfor %}
+                        </div>
+                        <div class="tab-pane fade" id="interview" role="tabpanel">
+                            <h5 class="mb-3">AI Interview Questions</h5>
+                            <div class="border p-3 bg-light rounded">
+                                {% if result.interview_questions %}
+                                    <ul class="small ps-3">
+                                        {% for question in result.interview_questions.splitlines %}
+                                            {% if question %}
+                                                <li>{{ question|escape }}</li>
+                                            {% endif %}
+                                        {% endfor %}
+                                    </ul>
+                                {% else %}
+                                    <p class="text-muted">No questions generated. Try re-analyzing with a more detailed resume.</p>
+                                {% endif %}
+                            </div>
                         </div>
                     </div>
                 </div>
@@ -93,18 +136,57 @@
 
         <!-- RIGHT SECTION -->
         <div class="col-lg-4">
-            <!-- MATCH SCORE -->
-            <div class="card text-center mb-4">
-                <div class="card-header bg-white"><h6 class="mb-0">Overall Skill Match</h6></div>
-                <div class="card-body">
-                    <h1 class="display-4 fw-bold text-primary">{{ result.match_score }}%</h1>
+            <!-- 🎯 Unified Skill Match Overview -->
+            <div class="card shadow p-4 mb-4">
+                <h5 class="mb-3">🎯 Skill Match Overview</h5>
+                <div class="d-flex align-items-center justify-content-between mb-2">
+                    <span class="fw-semibold">Match Score</span>
+                    <span class="fw-bold text-primary fs-5">{{ result.match_score }}%</span>
+                </div>
+                <div class="progress mb-3" style="height: 10px;">
+                    <div class="progress-bar bg-primary" role="progressbar" style="width: {{ result.match_score }}%;" aria-valuenow="{{ result.match_score }}" aria-valuemin="0" aria-valuemax="100"></div>
+                </div>
+                <p class="small text-muted mb-0">
+                    Out of {{ summary_stats.total_required_skills }} required skills,
+                    <strong>{{ summary_stats.total_matched_skills }}</strong> were matched.
+                </p>
+            </div>
+
+            <!-- 🧠 Skill Analysis -->
+            <div class="card shadow p-4 mb-4">
+                <h5 class="mb-3">🧠 Skill Analysis</h5>
+                <div class="mb-3">
+                    <h6 class="text-success">✅ Matched Skills</h6>
+                    {% if result.matched_skills %}
+                        <div class="d-flex flex-wrap gap-2">
+                            {% for skill in result.matched_skills %}
+                                <span class="badge bg-success-subtle text-success border border-success">{{ skill }}</span>
+                            {% endfor %}
+                        </div>
+                    {% else %}
+                        <p class="text-muted small">No matched skills found.</p>
+                    {% endif %}
+                </div>
+                <div>
+                    <h6 class="text-danger">❌ Missing Skills</h6>
+                    {% if result.missing_skills %}
+                        <div class="d-flex flex-wrap gap-2">
+                            {% for skill in result.missing_skills %}
+                                <span class="badge bg-danger-subtle text-danger border border-danger">{{ skill }}</span>
+                            {% endfor %}
+                        </div>
+                    {% else %}
+                        <p class="text-muted small">All required skills are present.</p>
+                    {% endif %}
                 </div>
             </div>
 
-            <!-- IMPROVEMENT SCORE -->
+            <!-- 📈 Improvement Score -->
             {% if result.improvement_score is not None %}
             <div class="card text-center mb-4">
-                <div class="card-header bg-white"><h6 class="mb-0">Resume Skill Improvement</h6></div>
+                <div class="card-header bg-white">
+                    <h6 class="mb-0">📈 Resume Skill Improvement</h6>
+                </div>
                 <div class="card-body">
                     <div style="position: relative; width: 100%; max-width: 220px; height: 110px; margin: auto;">
                         <canvas id="gaugeChart" data-score="{{ result.improvement_score }}"></canvas>
@@ -114,21 +196,26 @@
             </div>
             {% endif %}
 
-            <!-- RESUME GRADE -->
+            <!-- 📝 Resume Grade -->
             <div class="card">
-                <div class="card-header text-center bg-white"><h6 class="mb-0">Resume Grade</h6></div>
+                <div class="card-header text-center bg-white">
+                    <h6 class="mb-0">📝 Resume Grade</h6>
+                </div>
                 <div class="card-body text-center">
                     <h1 class="display-5 fw-bold text-success">{{ result.resume_grade }}/100</h1>
-                    <ul class="list-group list-group-flush mt-3 text-start small">
+                    <span class="badge bg-info text-dark mb-3">🔍 Level: {{ result.experience_level }}</span>
+                    <ul class="list-group list-group-flush mt-2 text-start small">
                         {% for key, value in result.grading_feedback.items %}
                             <li class="list-group-item">{{ value }}</li>
                         {% endfor %}
                     </ul>
                 </div>
             </div>
+
+            <!-- 🔙 Back to Dashboard -->
+            <a href="{% url 'dashboard' %}" class="btn btn-secondary mt-4">← Back to Dashboard</a>
         </div>
     </div>
-    <a href="{% url 'dashboard' %}" class="btn btn-secondary mt-4">← Back to Dashboard</a>
 </div>
 {% endblock %}
 

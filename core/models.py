@@ -28,37 +28,42 @@ class Resume(models.Model):
         return f"Resume for {self.user.username} uploaded at {self.uploaded_at.strftime('%Y-%m-%d')}"
 
 class AnalysisResult(models.Model):
-    resume = models.ForeignKey(Resume, on_delete=models.CASCADE)
-    job_role = models.ForeignKey(JobRole, on_delete=models.CASCADE, null=True, blank=True)
-    
-    # Add a field to store the text of a custom job description
+    resume = models.ForeignKey("Resume", on_delete=models.CASCADE)
+    job_role = models.ForeignKey("JobRole", on_delete=models.CASCADE, null=True, blank=True)
+
+    # Custom JD
     custom_job_description = models.TextField(blank=True, null=True)
-    
+
     # Scores and Analysis Data
     match_score = models.FloatField(default=0.0)
     matched_skills = models.JSONField(default=list)
     missing_skills = models.JSONField(default=list)
     categorized_analysis = models.JSONField(default=dict)
-    
-    # Resume Grading Data (for first-time analysis)
+
+    # Resume Grading
     resume_grade = models.FloatField(default=0.0)
     grading_feedback = models.JSONField(default=dict)
 
-    # Improvement Score Data (for subsequent analyses)
+    # Improvement Tracking
     improvement_score = models.FloatField(null=True, blank=True)
-    
+
     # AI Suggestions and Timestamps
     ai_suggestions = models.TextField(blank=True, null=True)
-    analyzed_at = models.DateTimeField(auto_now_add=True)
+    analyzed_at = models.DateTimeField(auto_now_add=True)  # ✅ Keep only this one
+
+    # ✅ Experience tab and Interview tab
+    experience_level = models.CharField(max_length=50, blank=True, null=True)
+    extracted_sections = models.JSONField(default=dict, blank=True, null=True)
+    interview_questions = models.TextField(blank=True, null=True)
+
     def get_job_title(self):
-        """Returns the job title, whether from a saved role or a custom one."""
         if self.job_role:
             return self.job_role.name
         return "Custom Job Description"
-    
+
     def __str__(self):
-        return f"Analysis for {self.resume.user.username} vs {self.job_role.name} on {self.analyzed_at.date()}"
-    
+        return f"Analysis for {self.resume.user.username} vs {self.job_role.name if self.job_role else 'Custom'} on {self.analyzed_at.date()}"
+
 # --- NEW: Add the LearningResource model ---
 class LearningResource(models.Model):
     skill_name = models.CharField(max_length=100, unique=True, primary_key=True)

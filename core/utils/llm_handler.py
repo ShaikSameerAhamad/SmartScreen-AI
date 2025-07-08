@@ -1,17 +1,23 @@
-# core/utils/llm_handler.py
 import os
 import requests
-import json
+from dotenv import load_dotenv
 
-# --- Configuration for Google Gemini API ---
-API_URL = f"https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash-latest:generateContent?key={os.getenv('GOOGLE_API_KEY')}"
-headers = {"Content-Type": "application/json"}
+# Load environment variables
+load_dotenv(override=True) 
 
-def generate_llm_suggestions(resume_text, job_description_text):
+API_URL = "https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent"
+API_KEY = os.getenv("GOOGLE_API_KEY")
+
+headers = {
+    "Content-Type": "application/json",
+    "X-goog-api-key": API_KEY
+}
+def generate_llm_suggestions(resume_text, job_title, required_skills, job_description_text):
+    if not API_KEY:
+        return "❌ API key missing. Check your .env file."
     if len(resume_text.strip()) < 100 or len(job_description_text.strip()) < 100:
-        return "Insufficient content for AI suggestions. Please upload a more detailed resume or job description."
+        return "❌ Resume or job description is too short."
 
-    # Build prompt with system-style instruction
     prompt = f"""
 You are an expert career coach and ATS resume analyst. Given a job description and a user's resume, your task is to identify:
 
@@ -24,9 +30,14 @@ You are an expert career coach and ATS resume analyst. Given a job description a
 Return your suggestions as 3 to 6 clear, numbered bullet points. Use **bold** headings for each point. Keep it highly actionable and practical.
 
 ---
+**Job Title:** {job_title}
 
-**Job Description:**
+**Required Skills for this Role:**
+{required_skills}
+
+**Full Job Description:**
 {job_description_text}
+
 
 ---
 
@@ -37,34 +48,72 @@ Return your suggestions as 3 to 6 clear, numbered bullet points. Use **bold** he
     payload = {
         "contents": [
             {
-                "parts": [{"text": prompt}]
+                "role": "user",  # REQUIRED for 1.5 Flash
+                "parts": [
+                    {"text": prompt}
+                ]
             }
-        ],
-        "safetySettings": [
-            {"category": "HARM_CATEGORY_HARASSMENT", "threshold": "BLOCK_NONE"},
-            {"category": "HARM_CATEGORY_HATE_SPEECH", "threshold": "BLOCK_NONE"},
-            {"category": "HARM_CATEGORY_SEXUALLY_EXPLICIT", "threshold": "BLOCK_NONE"},
-            {"category": "HARM_CATEGORY_DANGEROUS_CONTENT", "threshold": "BLOCK_NONE"}
         ]
     }
 
     try:
         response = requests.post(API_URL, headers=headers, json=payload)
         if response.status_code != 200:
-            return f"Could not generate suggestions (HTTP {response.status_code})"
+            return f"❌ Could not generate suggestions (HTTP {response.status_code})"
 
-        output = response.json()
-        if 'candidates' in output and output['candidates']:
-            content = output['candidates'][0].get('content', {})
-            if 'parts' in content and content['parts']:
-                return content['parts'][0].get('text', 'The model returned no suggestions.').strip()
+        data = response.json()
+        parts = data.get("candidates", [{}])[0].get("content", {}).get("parts", [])
+        return parts[0].get("text", "⚠️ Empty response from Gemini.") if parts else "⚠️ No content returned."
 
-        if 'promptFeedback' in output and output['promptFeedback'].get('blockReason'):
-            return "Prompt blocked by safety filters. Try using a different job/resume input."
-
-        return "The model returned an empty response."
-
-    except requests.exceptions.RequestException as e:
-        return "Network error while calling AI suggestion service."
+    except requests.exceptions.RequestException:
+        return "❌ Network error when calling Gemini API."
     except Exception as e:
-        return "Unexpected error during suggestion generation."
+        return f"❌ Unexpected error: {str(e)}"
+
+
+def generate_interview_questions(resume_text, experience_level, project_info="", skill_summary=""):
+    prompt = f"""
+You are an expert technical interviewer. Based on the candidate's resume and experience level ({experience_level}), generate the following interview questions:
+
+- 8 technical questions based on the candidate's resume and skills.
+- 6 project-related questions based on the 'Projects' section.
+- 6 HR/behavioral questions based on their overall profile.
+
+Make sure:
+- Only return the questions in plain text format.dont use unnecessary symbols and even the text written inside().they should be just like the questions asked by an interviewer.
+- No generic questions like "What is Python?",such questions are allowed but very rare,eventhough such questions are there they should not be as generic question.
+- Use follow-up or real-world situation framing where possible but not in all questions.
+- Number each question clearly.
+- Make the questions human-like, scenario-based, and aligned with the candidate's background.
+
+--- RESUME ---
+{resume_text}
+
+--- PROJECTS ---
+{project_info}
+
+--- SKILLS ---
+{skill_summary}
+"""
+
+    payload = {
+        "contents": [
+            {
+                "role": "user",
+                "parts": [{"text": prompt}]
+            }
+        ]
+    }
+
+    try:
+        response = requests.post(API_URL, headers=headers, json=payload)
+
+        if response.status_code != 200:
+            return f"❌ Error {response.status_code} generating interview questions"
+
+        data = response.json()
+        parts = data.get("candidates", [{}])[0].get("content", {}).get("parts", [])
+        return parts[0].get("text", "⚠️ No questions returned.") if parts else "⚠️ Empty response"
+
+    except Exception as e:
+        return f"❌ Interview Question Error: {str(e)}"

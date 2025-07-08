@@ -484,3 +484,70 @@ select optgroup {
     height: 250px;
   }
 }
+
+/* === Animated Background === */
+.dashboard-wrapper {
+  position: relative;
+  overflow: hidden;
+}
+#animated-bg {
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  z-index: -1;
+  background:transparent;
+pointer-events: none;
+}
+.animated-bg::before {
+  content: "";
+  position: absolute;
+  top: -100px;
+  left: 0;
+  width: 100%;
+  height: 120%;
+  background: url('/static/images/constellation-animation.svg') center top no-repeat;
+  background-size: cover;
+  animation: floatStars 60s linear infinite;
+  opacity: 0.2;
+}
+
+@keyframes floatStars {
+  from { transform: translateY(0); }
+  to { transform: translateY(20px); }
+}
+
+@keyframes pulseBackground {
+  0% {
+    background-color: #1f2937;
+  }
+  100% {
+    background-color: #0f172a;
+  }
+}
+
+/* Optional Glowing Ring Animation */
+.glow-ring {
+  position: absolute;
+  width: 300px;
+  height: 300px;
+  border-radius: 50%;
+  background: radial-gradient(circle, rgba(124,58,237,0.25) 0%, transparent 70%);
+  top: 20%;
+  left: 60%;
+  transform: translate(-50%, -50%);
+  animation: glow 6s ease-in-out infinite;
+  z-index: -9;
+}
+
+@keyframes glow {
+  0%, 100% {
+    transform: translate(-50%, -50%) scale(1);
+    opacity: 0.5;
+  }
+  50% {
+    transform: translate(-50%, -50%) scale(1.2);
+    opacity: 0.8;
+  }
+}

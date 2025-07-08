@@ -70,8 +70,10 @@ def dashboard_view(request):
             resume_instance.save()
 
             # Call the analysis function with all required arguments
-            analysis_data = perform_full_analysis(extracted_text, job_skills_text, full_jd_text)
-
+            job_title = job_role_instance.name if job_role_instance else "Custom Role"
+            analysis_data = perform_full_analysis(extracted_text, job_skills_text, full_jd_text, job_title)
+            resume_instance.interview_questions = analysis_data.get("interview_questions", "")
+            resume_instance.save()
             # --- Logic to calculate improvement score ---
             improvement_score = None
             if job_role_instance:
@@ -94,8 +96,12 @@ def dashboard_view(request):
                 categorized_analysis=analysis_data['categorized_analysis'],
                 resume_grade=analysis_data['resume_grade'],
                 grading_feedback=analysis_data['grading_feedback'],
-                improvement_score=improvement_score
+                improvement_score=improvement_score,
+                experience_level=analysis_data['experience_level'],
+                extracted_sections=analysis_data['extracted_sections'],
+                interview_questions=analysis_data['interview_questions']  # ✅ Add this
             )
+           
             return redirect('results', result_id=result.id)
     else:
         form = ResumeUploadForm()
@@ -126,11 +132,22 @@ def results_view(request, result_id):
         for resource in LearningResource.objects.filter(skill_name__in=missing_skills_list)
     }
     # --- END: New Logic ---
+    summary_stats = {
+        "total_required_skills": len(result.matched_skills) + len(result.missing_skills),
+        "total_matched_skills": len(result.matched_skills),
+        "matching_ratio": f"{len(result.matched_skills)}/{len(result.matched_skills) + len(result.missing_skills)}",
+        "percent": round(len(result.matched_skills) / (len(result.matched_skills) + len(result.missing_skills)) * 100, 2)
+        if (result.matched_skills or result.missing_skills) else 0
+        }
 
     context = {
-        'result': result,
-        'learning_resources': learning_resources, # Pass new data to the template
+        "result": result,
+        "summary_stats": summary_stats,
+        "learning_resources": learning_resources,
+        "experience_level": result.experience_level,
+        "extracted_sections": result.extracted_sections,
     }
+
     return render(request, 'results.html', context)
 
 @login_required
