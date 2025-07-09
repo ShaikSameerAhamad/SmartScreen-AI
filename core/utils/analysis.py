@@ -186,24 +186,45 @@ def extract_sections(text):
     return sections
 
 def classify_experience_level(sections):
-    text = sections.get('experience', '')
-    project_text = sections.get('projects', '')
+    """
+    More accurate classifier based on experience text + keywords.
+    """
+    text_all = " ".join(sections.values()).lower()
+    exp_text = sections.get('experience', '').lower()
+    projects_text = sections.get('projects', '').lower()
 
-    experience_years = len(re.findall(r'\b\d+\+?\s+(?:years?|yrs?)\b', text.lower()))
-    professional_keywords = ['managed', 'led', 'deployed', 'mentored', 'architected']
-    fresher_keywords = ['student', 'final year', 'internship', 'college', 'b.tech']
+    score = {"Fresher": 0, "Intermediate": 0, "Professional": 0}
 
-    prof_score = sum(1 for word in professional_keywords if word in text.lower())
-    fresh_score = sum(1 for word in fresher_keywords if word in text.lower())
+    # Detect internship / freshers
+    if 'intern' in exp_text or 'intern' in projects_text:
+        score['Fresher'] += 2
+    if any(x in text_all for x in ['student', 'pursuing', 'b.tech', 'bachelor']):
+        score['Fresher'] += 2
+    if re.search(r'\b(0|0-1|less than 1)\+?\s*(years|yrs)\b', exp_text):
+        score['Fresher'] += 2
 
-    if 'intern' in text.lower() or 'intern' in project_text.lower():
-        return "Fresher"
-    elif experience_years >= 3 or prof_score >= 3:
+    # Intermediate signals
+    if any(x in exp_text for x in ['developed', 'implemented', 'enhanced']) and 'years' not in exp_text:
+        score['Intermediate'] += 1
+    if re.search(r'\b(1|1-2|2)\+?\s*(years|yrs)\b', exp_text):
+        score['Intermediate'] += 2
+
+    # Professional signals
+    if re.search(r'\b(3|4|5|\d{2,})\+?\s*(years|yrs)\b', exp_text):
+        score['Professional'] += 3
+    if any(x in exp_text for x in ['led', 'managed', 'deployed', 'architected', 'mentored']):
+        score['Professional'] += 1
+
+    # Final decision
+    if score['Professional'] >= 3:
         return "Professional"
-    elif prof_score >= 1 or len(project_text) > 100:
+    elif score['Intermediate'] >= 2:
         return "Intermediate"
-    else:
+    elif score['Fresher'] >= 2:
         return "Fresher"
+    else:
+        return "Fresher"  # Default if unsure
+
 
 def grade_resume(text):
     feedback = {}

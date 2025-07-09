@@ -2,18 +2,27 @@ import os
 import requests
 from dotenv import load_dotenv
 
-# Load environment variables
-load_dotenv(override=True) 
+load_dotenv(override=True)
 
 API_URL = "https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent"
-API_KEY = os.getenv("GOOGLE_API_KEY")
+API_KEYS = os.getenv("GOOGLE_API_KEYS", "").split(",")
 
-headers = {
-    "Content-Type": "application/json",
-    "X-goog-api-key": API_KEY
-}
+def try_gemini_api(payload):
+    for key in API_KEYS:
+        headers = {
+            "Content-Type": "application/json",
+            "X-goog-api-key": key.strip()
+        }
+        try:
+            response = requests.post(API_URL, headers=headers, json=payload)
+            if response.status_code == 200:
+                return response.json()
+        except:
+            continue  # silent fail and try next key
+    return {"error": "All API keys failed."}
+
 def generate_llm_suggestions(resume_text, job_title, required_skills, job_description_text):
-    if not API_KEY:
+    if not API_KEYS or not API_KEYS[0]:
         return "❌ API key missing. Check your .env file."
     if len(resume_text.strip()) < 100 or len(job_description_text.strip()) < 100:
         return "❌ Resume or job description is too short."
@@ -38,7 +47,6 @@ Return your suggestions as 3 to 6 clear, numbered bullet points. Use **bold** he
 **Full Job Description:**
 {job_description_text}
 
-
 ---
 
 **Resume:**
@@ -48,42 +56,37 @@ Return your suggestions as 3 to 6 clear, numbered bullet points. Use **bold** he
     payload = {
         "contents": [
             {
-                "role": "user",  # REQUIRED for 1.5 Flash
-                "parts": [
-                    {"text": prompt}
-                ]
+                "role": "user",
+                "parts": [{"text": prompt}]
             }
         ]
     }
 
-    try:
-        response = requests.post(API_URL, headers=headers, json=payload)
-        if response.status_code != 200:
-            return f"❌ Could not generate suggestions (HTTP {response.status_code})"
-
-        data = response.json()
-        parts = data.get("candidates", [{}])[0].get("content", {}).get("parts", [])
+    response = try_gemini_api(payload)
+    if "candidates" in response:
+        parts = response["candidates"][0].get("content", {}).get("parts", [])
         return parts[0].get("text", "⚠️ Empty response from Gemini.") if parts else "⚠️ No content returned."
-
-    except requests.exceptions.RequestException:
-        return "❌ Network error when calling Gemini API."
-    except Exception as e:
-        return f"❌ Unexpected error: {str(e)}"
-
+    
+    return f"❌ LLM Suggestion Error: {response.get('error', 'Unknown error')}"
 
 def generate_interview_questions(resume_text, experience_level, project_info="", skill_summary=""):
+    if not API_KEYS or not API_KEYS[0]:
+        return "❌ API key missing. Check your .env file."
+
     prompt = f"""
 You are an expert technical interviewer. Based on the candidate's resume and experience level ({experience_level}), generate the following interview questions:
 
-- 8 technical questions based on the candidate's resume and skills.
-- 6 project-related questions based on the 'Projects' section.
-- 6 HR/behavioral questions based on their overall profile.
+- 8 Technical Questions based on the candidate's resume and skills.
+- 6 Project-Related Questions based on the 'Projects' section.
+- 6 HR/Behavioral Questions based on their overall profile.
 
-Make sure:
-- Only return the questions in plain text format.dont use unnecessary symbols and even the text written inside().they should be just like the questions asked by an interviewer.
-- No generic questions like "What is Python?",such questions are allowed but very rare,eventhough such questions are there they should not be as generic question.
-- Use follow-up or real-world situation framing where possible but not in all questions.
-- Number each question clearly.
+Format your response as three clearly separated sections, each with a bold section header (e.g., 'Technical Questions', 'Project-Related Questions', 'HR/Behavioral Questions').
+
+For each section:
+- Start numbering from 1 for each section (do not continue numbering across sections).
+- Use plain text, no markdown, no nested or broken numbering, and no extra symbols.
+- Each question should be on its own line, with a number and a period (e.g., '1. ...').
+- Do not include any explanations or introductory text, only the questions and section headers.
 - Make the questions human-like, scenario-based, and aligned with the candidate's background.
 
 --- RESUME ---
@@ -105,15 +108,9 @@ Make sure:
         ]
     }
 
-    try:
-        response = requests.post(API_URL, headers=headers, json=payload)
-
-        if response.status_code != 200:
-            return f"❌ Error {response.status_code} generating interview questions"
-
-        data = response.json()
-        parts = data.get("candidates", [{}])[0].get("content", {}).get("parts", [])
+    response = try_gemini_api(payload)
+    if "candidates" in response:
+        parts = response["candidates"][0].get("content", {}).get("parts", [])
         return parts[0].get("text", "⚠️ No questions returned.") if parts else "⚠️ Empty response"
 
-    except Exception as e:
-        return f"❌ Interview Question Error: {str(e)}"
+    return f"❌ Interview Question Error: {response.get('error', 'Unknown error')}"

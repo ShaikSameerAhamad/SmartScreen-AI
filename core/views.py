@@ -11,6 +11,7 @@ from django.contrib.auth.forms import AuthenticationForm
 from django.http import HttpResponse
 from .utils.pdf_generator import render_to_pdf
 from datetime import datetime
+import markdown
 
 def register_view(request):
     if request.method == 'POST':
@@ -156,7 +157,12 @@ def download_pdf_view(request, result_id):
         result = AnalysisResult.objects.get(id=result_id, resume__user=request.user)
     except AnalysisResult.DoesNotExist:
         return redirect('dashboard')
-    context = {'result': result}
+    # Convert AI suggestions markdown to HTML
+    ai_suggestions_html = markdown.markdown(result.ai_suggestions or "")
+    context = {
+        'result': result,
+        'ai_suggestions_html': ai_suggestions_html,
+    }
     pdf = render_to_pdf('pdf_template.html', context)
     if pdf:
         response = HttpResponse(pdf, content_type='application/pdf')

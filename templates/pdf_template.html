@@ -5,136 +5,265 @@
     <title>Resume Analysis Report</title>
     <style>
         body {
-            font-family: "Helvetica", "sans-serif";
+            font-family: 'Segoe UI', 'Helvetica Neue', Arial, sans-serif;
             font-size: 11pt;
-            color: #333;
+            color: #222;
+            background: #f6f8fa;
+            margin: 0;
+            padding: 0;
+        }
+        .report-container {
+            max-width: 900px;
+            margin: 30px auto 0 auto;
+            background: #fff;
+            border-radius: 18px;
+            box-shadow: 0 8px 32px 0 rgba(60,60,60,0.12);
+            padding: 32px 36px 36px 36px;
         }
         h1 {
-            font-size: 24pt;
+            font-size: 2.2rem;
             text-align: center;
-            margin-bottom: 20px;
-            color: #2c3e50;
+            margin-bottom: 18px;
+            color: #2563eb;
+            letter-spacing: 0.02em;
         }
         h2 {
-            font-size: 16pt;
-            color: #3498db;
-            border-bottom: 1px solid #ccc;
-            padding-bottom: 5px;
-            margin-top: 25px;
+            font-size: 1.25rem;
+            color: #2563eb;
+            border-bottom: 2px solid #e0e7ef;
+            padding-bottom: 6px;
+            margin-top: 32px;
+            margin-bottom: 18px;
+            letter-spacing: 0.01em;
         }
-        table {
-            width: 100%;
-            border-collapse: collapse;
-            margin-top: 20px;
+        h3 {
+            font-size: 1.05rem;
+            color: #e67e22;
+            margin-top: 18px;
+            margin-bottom: 8px;
         }
-        th, td {
-            border: 1px solid #ddd;
-            padding: 8px;
-            text-align: left;
-            vertical-align: top;
+        .stat-block {
+            display: flex;
+            gap: 2.5rem;
+            justify-content: center;
+            margin: 18px 0 30px 0;
         }
-        th {
-            background-color: #f2f2f2;
-            font-size: 14pt;
+        .stat-card {
+            background: linear-gradient(120deg, #f3f4f6 60%, #e0e7ef 100%);
+            border-radius: 12px;
+            box-shadow: 0 2px 8px rgba(60,60,60,0.06);
+            padding: 18px 28px;
+            text-align: center;
+            min-width: 160px;
+        }
+        .stat-label {
+            color: #888;
+            font-size: 0.95rem;
+            margin-bottom: 4px;
+        }
+        .stat-value {
+            font-size: 1.5rem;
+            font-weight: 700;
+            color: #2563eb;
         }
         .score-value {
-            font-size: 28pt;
+            font-size: 2.1rem;
             font-weight: bold;
             text-align: center;
+            color: #27ae60;
         }
         .score-label {
             text-align: center;
-            font-size: 10pt;
+            font-size: 0.95rem;
             color: #666;
         }
         .suggestions {
-            white-space: pre-wrap; /* Allows text to wrap */
-            line-height: 1.4;
+            background: #f8fafc;
+            border-left: 4px solid #2563eb;
+            border-radius: 8px;
+            padding: 18px 20px;
+            margin-bottom: 18px;
+            line-height: 1.6;
         }
-        .missing-skills-list {
-            list-style-type: none;
-            padding: 0;
-            margin: 0;
+        .category-table {
+            width: 100%;
+            border-collapse: separate;
+            border-spacing: 0;
+            margin-top: 10px;
+            margin-bottom: 20px;
+            background: #f9fafb;
+            border-radius: 10px;
+            overflow: hidden;
+        }
+        .category-table th, .category-table td {
+            border: none;
+            padding: 10px 12px;
+            font-size: 10.5pt;
+        }
+        .category-table th {
+            background: #e0e7ef;
+            color: #2563eb;
+            font-weight: 600;
+        }
+        .category-table td {
+            background: #fff;
+        }
+        .matched-skills-list li, .missing-skills-list li {
+            display: inline-block;
+            margin: 3px 6px 3px 0;
+            padding: 6px 12px;
+            border-radius: 6px;
+            font-size: 10pt;
+        }
+        .matched-skills-list li {
+            background: #e8f8f5;
+            color: #148f77;
         }
         .missing-skills-list li {
-            display: inline-block;
-            background-color: #fdebd0;
+            background: #fdebd0;
             color: #c0392b;
-            padding: 5px 10px;
-            border-radius: 5px;
-            margin: 3px;
-            font-size: 10pt;
         }
         .feedback-list {
             list-style-type: disc;
-            padding-left: 20px;
+            padding-left: 22px;
+            margin-top: 10px;
+        }
+        .interview-list {
+            list-style-type: decimal;
+            padding-left: 22px;
+            margin-top: 0.5em;
         }
         .footer {
             text-align: center;
             font-size: 9pt;
             color: #999;
-            position: fixed;
-            bottom: 0px;
+            margin-top: 40px;
+        }
+        .divider {
+            border: none;
+            border-top: 1.5px solid #e0e7ef;
+            margin: 32px 0 24px 0;
         }
     </style>
 </head>
 <body>
-    <div class="footer">
-        Report generated by AI Resume Analyzer
-    </div>
+    <div class="report-container">
+        <h1>Resume Analysis Report</h1>
+        <div class="stat-block">
+            <div class="stat-card">
+                <div class="stat-label">Skill Match Score</div>
+                <div class="stat-value">{{ result.match_score }}%</div>
+            </div>
+            <div class="stat-card">
+                <div class="stat-label">Resume Grade</div>
+                <div class="stat-value">{{ result.resume_grade }}/100</div>
+            </div>
+            <div class="stat-card">
+                <div class="stat-label">Improvement Score</div>
+                <div class="stat-value">{{ result.improvement_score }}</div>
+            </div>
+        </div>
+        <table>
+            <tr>
+                <td><strong>Analyzed for:</strong><br/>{{ result.job_role.name }}</td>
+                <td><strong>Date:</strong><br/>{{ result.analyzed_at|date:"F d, Y" }}</td>
+            </tr>
+        </table>
+        <hr class="divider" />
 
-    <h1>Resume Analysis Report</h1>
+        <h2>AI-Powered Suggestions</h2>
+        <div class="suggestions">{{ ai_suggestions_html|safe }}</div>
 
-    <table>
-        <tr>
-            <td width="50%">
-                <strong>Analyzed for:</strong><br/>
-                {{ result.job_role.name }}
-            </td>
-            <td width="50%">
-                <strong>Date:</strong><br/>
-                {{ result.analyzed_at|date:"F d, Y" }}
-            </td>
-        </tr>
-    </table>
+        <h2>Skill Breakdown by Category</h2>
+        {% for category, data in result.categorized_analysis.items %}
+            {% if data.missing or data.matched %}
+            <h3>{{ category }}</h3>
+            <table class="category-table">
+                <tr>
+                    <th>Matched</th>
+                    <th>Missing</th>
+                    <th>Score</th>
+                </tr>
+                <tr>
+                    <td>
+                        {% if data.matched %}
+                        <ul class="matched-skills-list">
+                            {% for skill in data.matched %}
+                            <li>{{ skill }}</li>
+                            {% endfor %}
+                        </ul>
+                        {% else %}
+                        <span style="color: #aaa;">None</span>
+                        {% endif %}
+                    </td>
+                    <td>
+                        {% if data.missing %}
+                        <ul class="missing-skills-list">
+                            {% for skill in data.missing %}
+                            <li>{{ skill }}</li>
+                            {% endfor %}
+                        </ul>
+                        {% else %}
+                        <span style="color: #aaa;">None</span>
+                        {% endif %}
+                    </td>
+                    <td style="text-align:center; font-weight:bold; color:#e67e22;">{{ data.score }}%</td>
+                </tr>
+            </table>
+            {% endif %}
+        {% empty %}
+            <p>No skill categories were detected for this role.</p>
+        {% endfor %}
 
-    <table>
-        <tr>
-            <th width="50%">Skill Match Score</th>
-            <th width="50%">Overall Resume Grade</th>
-        </tr>
-        <tr>
-            <td>
-                <div class="score-value" style="color: #2980b9;">{{ result.match_score }}%</div>
-                <div class="score-label">Based on required skills</div>
-            </td>
-            <td>
-                <div class="score-value" style="color: #27ae60;">{{ result.resume_grade }}/100</div>
-                <div class="score-label">Based on structure and content</div>
-            </td>
-        </tr>
-    </table>
+        <h2>All Matched Skills</h2>
+        {% if result.matched_skills %}
+            <ul class="matched-skills-list">
+                {% for skill in result.matched_skills %}
+                    <li>{{ skill }}</li>
+                {% endfor %}
+            </ul>
+        {% else %}
+            <p>No matched skills found.</p>
+        {% endif %}
 
-    <h2>AI-Powered Suggestions</h2>
-    <p class="suggestions">{{ result.ai_suggestions }}</p>
+        <h2>All Missing Skills</h2>
+        {% if result.missing_skills %}
+            <ul class="missing-skills-list">
+                {% for skill in result.missing_skills %}
+                    <li>{{ skill }}</li>
+                {% endfor %}
+            </ul>
+        {% else %}
+            <p>No missing key skills were identified. Excellent!</p>
+        {% endif %}
 
-    <h2>Missing Skills</h2>
-    {% if result.missing_skills %}
-        <ul class="missing-skills-list">
-            {% for skill in result.missing_skills %}
-                <li>{{ skill }}</li>
+        <h2>AI Interview Questions</h2>
+        {% if result.interview_questions %}
+            <ol class="interview-list">
+                {% for question in result.interview_questions.splitlines %}
+                    {% if question %}
+                        <li>{{ question|escape }}</li>
+                    {% endif %}
+                {% endfor %}
+            </ol>
+        {% else %}
+            <p>No questions generated. Try re-analyzing with a more detailed resume.</p>
+        {% endif %}
+
+        <h2>Detailed Grading Feedback</h2>
+        <ul class="feedback-list">
+            {% for key, value in result.grading_feedback.items %}
+                <li><strong>{{ key|capfirst }}:</strong> {{ value }}</li>
             {% endfor %}
         </ul>
-    {% else %}
-        <p>No missing key skills were identified. Excellent!</p>
-    {% endif %}
 
-    <h2>Detailed Grading Feedback</h2>
-    <ul class="feedback-list">
-        {% for key, value in result.grading_feedback.items %}
-            <li><strong>{{ key|capfirst }}:</strong> {{ value }}</li>
-        {% endfor %}
-    </ul>
+        <div style="margin-top: 40px; text-align: center; color: #aaa; font-size: 10pt;">
+            <em>End of Report</em>
+        </div>
 
+        <div class="footer">
+            Report generated by AI Resume Analyzer
+        </div>
+    </div>
 </body>
 </html>
