@@ -141,7 +141,7 @@ MEDIA_ROOT = os.path.join(BASE_DIR, 'media')
 # ... (at the bottom of the file)
 LOGIN_URL = 'login'
 
-load_dotenv() #api
+load_dotenv(BASE_DIR / ".env") #api
 
 STATICFILES_DIRS = [
     os.path.join(BASE_DIR, 'static'),

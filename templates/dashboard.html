@@ -33,6 +33,17 @@
     <div class="neon-dot dot15"></div>
   </div>
 </div>
+<!-- LOADING SCREEN -->
+<div id="loadingScreen" class="loading-screen d-none">
+  <div class="loading-content">
+    <div class="neon-loader">
+      <div class="neon-ring"></div>
+    </div>
+    <h2 class="loading-title">Analyzing Your Resume...</h2>
+    <p class="loading-sub">AI is working its magic. Please wait!</p>
+    <div class="loading-fact" id="loadingFact">Did you know? 85% of jobs are filled through networking!</div>
+  </div>
+</div>
 <div class="neon-content">
 <div class="dashboard-container">
 
@@ -54,7 +65,7 @@
 
     <!-- Analyze Resume -->
     <h2 class="section-heading">Analyze Your Resume</h2>
-    <form method="post" enctype="multipart/form-data" class="analyze-form">
+    <form method="post" enctype="multipart/form-data" class="analyze-form" id="analyzeForm">
       {% csrf_token %}
       {% if form.non_field_errors %}
         <div class="form-errors">{{ form.non_field_errors.as_text }}</div>
@@ -173,6 +184,33 @@
     toggleBtn.querySelector('span').textContent = isVisible ? 'Hide Analysis History' : 'Show Analysis History';
     chevronIcon.style.transform = isVisible ? 'rotate(180deg)' : 'rotate(0deg)';
   });
-</script>
 
+  // === Show Loading Screen on Analyze ===
+  const analyzeForm = document.getElementById('analyzeForm');
+  const loadingScreen = document.getElementById('loadingScreen');
+  const loadingFact = document.getElementById('loadingFact');
+  const facts = [
+    "Did you know? 85% of jobs are filled through networking!",
+    "Recruiters spend an average of 7 seconds scanning a resume.",
+    "Adding quantifiable achievements boosts your resume's impact.",
+    "Tailoring your resume for each job increases your chances.",
+    "Technical skills are among the top keywords recruiters search for.",
+    "AI can help you optimize your resume for ATS systems.",
+    "Soft skills like communication and teamwork are highly valued.",
+    "A well-structured resume can double your interview chances.",
+    "Keep your resume to one page if you have less than 10 years experience.",
+    "Proofreading your resume reduces rejection risk by 50%.",
+    "Highlighting certifications can set you apart in tech roles.",
+    "Action verbs make your resume more dynamic and engaging.",
+    "Customizing your resume summary can grab recruiter attention.",
+    "Showcasing project experience is key for technical jobs.",
+    "LinkedIn profiles with photos get 21x more views."
+  ];
+  analyzeForm.addEventListener('submit', function(e) {
+    loadingScreen.classList.remove('d-none');
+    document.body.classList.add('loading');
+    // Show a random fact
+    loadingFact.textContent = facts[Math.floor(Math.random() * facts.length)];
+  });
+</script>
 {% endblock %}
