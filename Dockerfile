@@ -16,6 +16,7 @@ RUN apt-get update && apt-get install -y \
         tesseract-ocr libtesseract-dev \
         default-libmysqlclient-dev pkg-config \
         libssl-dev libffi-dev \
+        default-jre-headless \
     && apt-get clean && rm -rf /var/lib/apt/lists/*
 
 # -------- Python deps --------
