@@ -25,9 +25,11 @@ BASE_DIR = Path(__file__).resolve().parent.parent
 SECRET_KEY = 'django-insecure-pqk&d@z^*f*qg6t==ldfd&2&@%pphfis%3z2far3dn8!l*1ly9'
 
 # SECURITY WARNING: don't run with debug turned on in production!
-DEBUG = True
+DEBUG = False
 
-ALLOWED_HOSTS = []
+ALLOWED_HOSTS = [
+    "resume-analyzer-300042385047.us-central1.run.app",
+]
 
 
 # Application definition
